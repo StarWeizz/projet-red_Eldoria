@@ -26,7 +26,7 @@ var Recipes = []Recipe{
 		Needs:  []string{"Papier", "Papier"},
 	},
 	{
-		Result: "Parchemin",
+		Result: "Couteaux de Chasse",
 		Needs:  []string{"Bâton", "Ecaille d'Azador"},
 	},
 }
