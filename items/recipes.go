@@ -17,4 +17,16 @@ var Recipes = []Recipe{
 		Result: "Epée simple",
 		Needs:  []string{"Bâton", "Pierre", "Pierre"},
 	},
+	{
+		Result: "Grimoire Simple",
+		Needs:  []string{"Parchemin", "Parchemin"},
+	},
+	{
+		Result: "Parchemin",
+		Needs:  []string{"Papier", "Papier"},
+	},
+	{
+		Result: "Parchemin",
+		Needs:  []string{"Bâton", "Ecaille d'Azador"},
+	},
 }

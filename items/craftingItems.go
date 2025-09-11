@@ -22,4 +22,14 @@ var CraftingItems = map[string]CraftingItem{
 		Description: "Une écaille rare d’un ancien dragon, ingrédient précieux pour une arme basique.",
 		// DropRate: 40,
 	},
+	"Papier": {
+		Name:        "Papier",
+		Description: "du Papier simple pour des craft simple",
+		// DropRate: 40,
+	},
+	"Parchemin": {
+		Name:        "Papier",
+		Description: "du Papier simple pour des craft simple",
+		// DropRate: 40,
+	},
 }
