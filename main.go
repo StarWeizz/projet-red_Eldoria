@@ -1,54 +1,130 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"os"
 
-	"golang.org/x/term"
+	"github.com/gdamore/tcell/v2"
+)
+
+const (
+	width  = 40
+	height = 20
 )
 
 func main() {
-	oldState, _ := term.MakeRaw(int(os.Stdin.Fd()))
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
+	// Initialiser l’écran
+	screen, err := tcell.NewScreen()
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+	if err := screen.Init(); err != nil {
+		log.Fatalf("%+v", err)
+	}
+	defer screen.Fini()
 
-	buf := make([]byte, 3)
-	x, y := 5, 5 // position du joueur
-
-	clearScreen()
-	printAt(x, y, "X")
-
-	for {
-		n, _ := os.Stdin.Read(buf)
-		if n == 1 && buf[0] == 'q' {
-			break
-		}
-
-		if n == 3 && buf[0] == 27 && buf[1] == 91 {
-			// efface ancienne position
-			printAt(x, y, " ")
-
-			switch buf[2] {
-			case 'A': // haut
-				y--
-			case 'B': // bas
-				y++
-			case 'C': // droite
-				x++
-			case 'D': // gauche
-				x--
+	// Construire la grille
+	grid := make([][]rune, height)
+	for y := range grid {
+		grid[y] = make([]rune, width)
+		for x := range grid[y] {
+			if y == 0 || y == height-1 || x == 0 || x == width-1 {
+				grid[y][x] = '⬜'
+			} else {
+				grid[y][x] = '🟫'
 			}
-			// dessine nouvelle position
-			printAt(x, y, "X")
 		}
 	}
-}
 
-// Efface l’écran
-func clearScreen() {
-	fmt.Print("\033[2J")
-}
+	// Ajouter un bloc spécial
+	grid[10][10] = '🟨'
 
-// Déplace le curseur et écrit
-func printAt(x, y int, s string) {
-	fmt.Printf("\033[%d;%dH%s", y, x, s)
+	// Position initiale du joueur
+	px, py := 1, 1
+	grid[py][px] = '😀'
+
+	// Fonction d’affichage
+	draw := func() {
+		screen.Clear()
+		for y := 0; y < height; y++ {
+			for x := 0; x < width; x++ {
+				r := grid[y][x]
+				screen.SetContent(x*2, y, r, nil, tcell.StyleDefault)
+				screen.SetContent(x*2+1, y, ' ', nil, tcell.StyleDefault)
+			}
+		}
+		screen.Show()
+	}
+
+	draw()
+
+	// Fonction pour vérifier si joueur est à côté du bloc spécial
+	checkInteraction := func() {
+		coords := [][2]int{
+			{px + 1, py}, {px - 1, py},
+			{px, py + 1}, {px, py - 1},
+		}
+		for _, c := range coords {
+			x, y := c[0], c[1]
+			if grid[y][x] == '🟨' {
+				screen.Fini() // désactiver l’écran pour afficher dans terminal
+				fmt.Println("\n⚡ Vous êtes à côté d’un bloc jaune ! Tapez 'open' pour l’ouvrir.")
+				reader := bufio.NewReader(os.Stdin)
+				cmd, _ := reader.ReadString('\n')
+				if cmd == "open\n" {
+					fmt.Println("🎁 Coffre ouvert ! Vous avez trouvé une récompense.")
+				} else {
+					fmt.Println("❌ Commande incorrecte, rien ne se passe.")
+				}
+
+				// Réactiver l’écran
+				if err := screen.Init(); err != nil {
+					log.Fatalf("%+v", err)
+				}
+				draw()
+			}
+		}
+	}
+
+	// Boucle d’événements
+	for {
+		ev := screen.PollEvent()
+		switch ev := ev.(type) {
+		case *tcell.EventKey:
+			if ev.Rune() == 'q' {
+				return
+			}
+
+			grid[py][px] = '🟫'
+
+			switch ev.Key() {
+			case tcell.KeyUp:
+				if py > 1 {
+					py--
+				}
+			case tcell.KeyDown:
+				if py < height-2 {
+					py++
+				}
+			case tcell.KeyRight:
+				if px < width-2 {
+					px++
+				}
+			case tcell.KeyLeft:
+				if px > 1 {
+					px--
+				}
+			}
+
+			grid[py][px] = '😀'
+			draw()
+			checkInteraction()
+
+		case *tcell.EventResize:
+			screen.Sync()
+			draw()
+		}
+	}
 }
