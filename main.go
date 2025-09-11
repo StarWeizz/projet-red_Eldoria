@@ -15,6 +15,15 @@ const (
 )
 
 func main() {
+
+	//inv := inventory.NewInventory()
+	//inv.Add(items.WeaponList["Epée simple"], 1)
+	//inv.Add(items.PotionsList["Heal potion"], 3)
+	//inv.Add(items.CraftingItems["Bâton"], 2)
+	//inv.List()
+
+	// Comande inventaire en gros c'est des /give
+
 	// Initialiser l’écran
 	screen, err := tcell.NewScreen()
 	if err != nil {

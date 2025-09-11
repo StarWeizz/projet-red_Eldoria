@@ -9,6 +9,13 @@ type Potion struct {
 	//DropRate    int
 }
 
+func (p Potion) GetName() string {
+	return p.Name
+}
+func (p Potion) GetDescription() string {
+	return p.Description
+}
+
 var PotionsList = map[string]Potion{
 	"Heal potion": {
 		Name:        "Heal potion",

@@ -4,7 +4,13 @@ type weapon struct {
 	Name        string
 	Description string
 	Damage      int
-	//DropRate    int
+}
+
+func (w weapon) GetName() string {
+	return w.Name
+}
+func (w weapon) GetDescription() string {
+	return w.Description
 }
 
 var WeaponList = map[string]weapon{
