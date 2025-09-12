@@ -46,7 +46,6 @@ func CreateCharacter() Character {
 
 	chosenClass := classes[classChoice-1]
 
-	// Définir les HP de départ selon la classe
 	maxHP := 100
 	switch chosenClass {
 	case "Guerrier":
@@ -63,6 +62,7 @@ func CreateCharacter() Character {
 		Level:     1,
 		MaxHP:     maxHP,
 		CurrentHP: maxHP,
+		Money:     100,
 		Inventory: []string{},
 	}
 }
