@@ -8,11 +8,11 @@
  2. Etre dans le dossier EldoriaGame 
  3. Lancer le Main.go 
  4. Amusez vous 
- 
+
 Au début vous devais juste lancer le main.go et choisir votre classe, 
 Pour vous déplacer vous devez juste utiliser les flèches directionnel 
 
-***Lord (optionnel)****
+***Lord (optionnel)***
 
 A Remplire* 
 

@@ -4,6 +4,7 @@ type weapon struct {
 	Name        string
 	Description string
 	Damage      int
+	Money       int
 }
 
 func (w weapon) GetName() string {
@@ -12,16 +13,20 @@ func (w weapon) GetName() string {
 func (w weapon) GetDescription() string {
 	return w.Description
 }
+func (w weapon) GetPrice() int {
+	return w.Money
+}
 
 var WeaponList = map[string]weapon{
-	"Epée simple": {
-		Name:        "Epée simple",
+	"Lame d’entrainement": {
+		Name:        "Lame d’entrainement",
 		Description: "",
 		Damage:      5,
+		Money:       35,
 		//	DropRate:    60,
 	},
-	"Double épée": {
-		Name:        "Double épée",
+	"épée de chevalier": {
+		Name:        "épée de chevalier",
 		Description: "",
 		Damage:      10,
 		//	DropRate:    20,
@@ -33,14 +38,15 @@ var WeaponList = map[string]weapon{
 		//	DropRate:    10,
 	},
 
-	"Grimoire Simple": {
-		Name:        "Grimoire Simple",
+	"Grimoire": {
+		Name:        "Grimoire",
 		Description: "",
 		Damage:      5,
+		Money:       35,
 		//	DropRate:    5,
 	},
-	"Livre des Mage": {
-		Name:        "Livre des Mage",
+	"Livre de Magie": {
+		Name:        "Livre de Magie",
 		Description: "",
 		Damage:      10,
 		//	DropRate:    5,
@@ -56,6 +62,7 @@ var WeaponList = map[string]weapon{
 		Name:        "Couteaux de Chasse",
 		Description: "",
 		Damage:      5,
+		Money:       35,
 		//	DropRate:    5,
 	},
 	"épée court runique": {

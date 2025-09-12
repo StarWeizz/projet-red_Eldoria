@@ -14,11 +14,11 @@ func (c CraftingItem) GetDescription() string {
 
 var Recipes = []Recipe{
 	{
-		Result: "Epée simple",
+		Result: "Lame d’entrainement",
 		Needs:  []string{"Bâton", "Pierre", "Pierre"},
 	},
 	{
-		Result: "Grimoire Simple",
+		Result: "Grimoire",
 		Needs:  []string{"Parchemin", "Parchemin"},
 	},
 	{

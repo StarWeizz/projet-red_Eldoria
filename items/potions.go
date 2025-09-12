@@ -6,6 +6,7 @@ type Potion struct {
 	Heal        int
 	Mana        int
 	Poison      int
+	Money       int
 	//DropRate    int
 }
 
@@ -15,6 +16,9 @@ func (p Potion) GetName() string {
 func (p Potion) GetDescription() string {
 	return p.Description
 }
+func (w Weapon) GetPrice() int {
+	return w.Price
+}
 
 var PotionsList = map[string]Potion{
 	"Heal potion": {
@@ -23,6 +27,7 @@ var PotionsList = map[string]Potion{
 		Heal:        20,
 		Mana:        0,
 		Poison:      0,
+		Money:       30,
 		//DropRate:    60,
 	},
 	"Poison potion": {
@@ -31,6 +36,7 @@ var PotionsList = map[string]Potion{
 		Heal:        0,
 		Mana:        0,
 		Poison:      10,
+		Money:       40,
 		//	DropRate:    30,
 	},
 }
