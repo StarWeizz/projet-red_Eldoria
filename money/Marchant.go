@@ -1,4 +1,4 @@
-package marchant
+package money
 
 import (
 	items "eldoria/items"
