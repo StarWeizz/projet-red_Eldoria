@@ -1,10 +1,14 @@
 package items
 
+//import (
+//money "eldoria/money"
+//)
+
 type weapon struct {
 	Name        string
 	Description string
 	Damage      int
-	Money       int
+	Price       int
 }
 
 func (w weapon) GetName() string {
@@ -14,7 +18,7 @@ func (w weapon) GetDescription() string {
 	return w.Description
 }
 func (w weapon) GetPrice() int {
-	return w.Money
+	return w.Price
 }
 
 var WeaponList = map[string]weapon{
@@ -22,7 +26,7 @@ var WeaponList = map[string]weapon{
 		Name:        "Lame d’entrainement",
 		Description: "",
 		Damage:      5,
-		Money:       35,
+		Price:       35,
 		//	DropRate:    60,
 	},
 	"épée de chevalier": {
@@ -42,7 +46,7 @@ var WeaponList = map[string]weapon{
 		Name:        "Grimoire",
 		Description: "",
 		Damage:      5,
-		Money:       35,
+		Price:       35,
 		//	DropRate:    5,
 	},
 	"Livre de Magie": {
@@ -62,7 +66,7 @@ var WeaponList = map[string]weapon{
 		Name:        "Couteaux de Chasse",
 		Description: "",
 		Damage:      5,
-		Money:       35,
+		Price:       35,
 		//	DropRate:    5,
 	},
 	"épée court runique": {

@@ -1,4 +1,4 @@
-package player
+package money
 
 type Money struct {
 	Amount int
