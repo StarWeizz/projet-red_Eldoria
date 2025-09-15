@@ -1,7 +1,8 @@
-package money
+package marchant
 
 import (
 	items "eldoria/items"
+	createcharacter "eldoria/player"
 	"fmt"
 )
 
@@ -32,7 +33,7 @@ func (m *Merchant) ShowStock() {
 	}
 }
 
-func (m *Merchant) Buy(p *player.Player, itemName string) {
+func (m *Merchant) Buy(p *createcharacter.Character, itemName string) {
 	it, ok := m.Stock[itemName]
 	if !ok {
 		fmt.Println("Cet objet n’est pas en vente.")
