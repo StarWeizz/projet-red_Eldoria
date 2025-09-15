@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 )
 
 // Structure Character
@@ -20,6 +21,16 @@ type Character struct {
 	Inventory *inventory.Inventory
 }
 
+// Fonction utilitaire pour mettre la première lettre en majuscule
+func capitalizeFirstLetter(s string) string {
+	if s == "" {
+		return s
+	}
+	runes := []rune(strings.ToLower(s)) // mettre tout en minuscule d'abord
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
+}
+
 // Fonction pour créer un personnage personnalisé
 func CreateCharacter() *Character {
 	reader := bufio.NewReader(os.Stdin)
@@ -28,6 +39,7 @@ func CreateCharacter() *Character {
 	fmt.Print("Entrez le nom de votre personnage : ")
 	name, _ := reader.ReadString('\n')
 	name = strings.TrimSpace(name)
+	name = capitalizeFirstLetter(name) // <-- mise en majuscule automatique
 
 	// Choix de la classe
 	classes := []string{"Guerrier", "Mage", "Chasseur"}
