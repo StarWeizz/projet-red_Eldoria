@@ -24,8 +24,8 @@ func (w weapon) GetPrice() int {
 }
 
 var WeaponList = map[string]weapon{
-	"Lame d’entrainement": {
-		Name:        "Lame d’entrainement",
+	"Lame rouillé": {
+		Name:        "Lame rouillé",
 		Description: "",
 		Damage:      5,
 		Price:       35,

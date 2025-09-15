@@ -14,7 +14,7 @@ func (c CraftingItem) GetDescription() string {
 
 var Recipes = []Recipe{
 	{
-		Result: "Lame d’entrainement",
+		Result: "Lame rouillé",
 		Needs:  []string{"Bâton", "Pierre", "Pierre"},
 	},
 	{
