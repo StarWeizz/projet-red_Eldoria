@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"os"
 
+	inventory "eldoria/Inventory"
+	"eldoria/interactions"
 	"eldoria/money"
 	"eldoria/worlds"
 
@@ -48,8 +48,22 @@ func main() {
 	}
 	currentWorld := 0
 
-	// Initialiser la money du joueur
+	// Initialiser la money du joueur et l'inventaire
 	playerMoney := money.NewMoney(100)
+	playerInventory := inventory.NewInventory()
+	interactionManager := interactions.NewInteractionManager(playerInventory)
+
+	// Variable pour stocker le message de lore à afficher
+	loreMessage := ""
+
+	// Fonction pour compter les items dans l'inventaire
+	getInventoryCount := func() int {
+		count := 0
+		for _, qty := range playerInventory.Items {
+			count += qty
+		}
+		return count
+	}
 
 	world := worldList[currentWorld]
 	// Sauvegarder la tuile originale et placer le joueur
@@ -59,15 +73,19 @@ func main() {
 	draw := func() {
 		screen.Clear()
 		w := worldList[currentWorld]
+		screenWidth, screenHeight := screen.Size()
 
 		// Topbar
 		hiddenStatus := ""
 		if w.IsPlayerHidden() {
 			hiddenStatus = " - 🌿 CACHÉ des monstres"
 		}
-		topbar := fmt.Sprintf("%s - 100/100 ♥ - 💰 %d - %s%s", "joueur", playerMoney.Get(), w.Name, hiddenStatus)
+		inventoryCount := getInventoryCount()
+		topbar := fmt.Sprintf("%s - 100/100 ♥ - 💰 %d - 🎒 %d items - %s - X:%d Y:%d%s", "joueur", playerMoney.Get(), inventoryCount, w.Name, w.PlayerX, w.PlayerY, hiddenStatus)
 		for i, r := range topbar {
-			screen.SetContent(i, 0, r, nil, tcell.StyleDefault)
+			if i < screenWidth {
+				screen.SetContent(i, 0, r, nil, tcell.StyleDefault)
+			}
 		}
 
 		// Grille
@@ -83,10 +101,68 @@ func main() {
 		screen.SetContent(w.PlayerX*2, w.PlayerY+1, '😀', nil, tcell.StyleDefault)
 		screen.SetContent(w.PlayerX*2+1, w.PlayerY+1, ' ', nil, tcell.StyleDefault)
 
+		// Zone de lore - Afficher sous la grille si il y a un message
+		loreY := w.Height + 2 // Juste sous la grille avec une ligne d'espace
+		if loreMessage != "" {
+			// Afficher le message de lore en vert clair
+			for i, r := range loreMessage {
+				if i < screenWidth {
+					screen.SetContent(i, loreY, r, nil, tcell.StyleDefault.Foreground(tcell.ColorLightGreen))
+				}
+			}
+		}
+
+		// Bottombar - Afficher les interactions disponibles
+		availableInteractions := interactionManager.CheckNearbyInteractions(w)
+		bottomY := screenHeight - 1
+
+		if len(availableInteractions) > 0 {
+			bottomText := availableInteractions[0] // Prendre la première interaction
+			for i, r := range bottomText {
+				if i < screenWidth {
+					screen.SetContent(i, bottomY, r, nil, tcell.StyleDefault.Foreground(tcell.ColorYellow))
+				}
+			}
+		} else {
+			// Afficher les commandes de base
+			defaultText := "Déplacez-vous avec les flèches • [E] pour interagir • [TAB] changer de monde • [Q] quitter"
+			for i, r := range defaultText {
+				if i < screenWidth {
+					screen.SetContent(i, bottomY, r, nil, tcell.StyleDefault.Foreground(tcell.ColorGray))
+				}
+			}
+		}
+
 		screen.Show()
 	}
 
 	checkInteraction := func() {
+		w := worldList[currentWorld]
+
+		// Vérifier les respawns
+		respawnMessages := interactionManager.CheckRespawns(w)
+		for _, msg := range respawnMessages {
+			// Afficher brièvement les messages de respawn (optionnel)
+			_ = msg
+		}
+
+		// Vérifier si le joueur est sur une porte (interaction automatique)
+		currentInteraction := w.GetInteractionType(w.PlayerX, w.PlayerY)
+		if currentInteraction == "door" {
+			result := interactionManager.HandleInteraction(w, w.PlayerX, w.PlayerY, "door")
+
+			if result.Success {
+				// Mettre à jour le message de lore au lieu de quitter l'écran
+				loreMessage = result.Message
+				// Le message s'affichera automatiquement lors du prochain draw()
+			}
+		} else {
+			// Effacer le message de lore si le joueur n'est plus sur une porte
+			loreMessage = ""
+		}
+	}
+
+	handleInteractionKey := func() {
 		w := worldList[currentWorld]
 		coords := [][2]int{
 			{w.PlayerX + 1, w.PlayerY},
@@ -94,22 +170,26 @@ func main() {
 			{w.PlayerX, w.PlayerY + 1},
 			{w.PlayerX, w.PlayerY - 1},
 		}
-		for _, c := range coords {
-			x, y := c[0], c[1]
-			if x >= 0 && x < w.Width && y >= 0 && y < w.Height && w.Grid[y][x] == '🟨' {
-				screen.Fini()
-				fmt.Println("\n⚡ Vous êtes à côté d’un bloc jaune ! Tapez 'open' pour l’ouvrir.")
-				reader := bufio.NewReader(os.Stdin)
-				cmd, _ := reader.ReadString('\n')
-				if cmd == "open\n" {
-					fmt.Println("🎁 Coffre ouvert ! Vous avez trouvé une récompense.")
-				} else {
-					fmt.Println("❌ Commande incorrecte, rien ne se passe.")
+
+		for _, coord := range coords {
+			x, y := coord[0], coord[1]
+			if x >= 0 && x < w.Width && y >= 0 && y < w.Height {
+				interactionType := w.GetInteractionType(x, y)
+				if interactionType != "none" && interactionType != "" && interactionType != "door" {
+					result := interactionManager.HandleInteraction(w, x, y, interactionType)
+
+					// Afficher le message dans la zone de lore au lieu de quitter l'écran
+					loreMessage = result.Message
+
+					if result.Success && result.ShouldRemove {
+						// Supprimer l'objet de la grille
+						w.RemoveObject(x, y)
+					}
+
+					// Redessiner immédiatement pour afficher le message
+					draw()
+					return // Sortir après la première interaction trouvée
 				}
-				if err := screen.Init(); err != nil {
-					log.Fatalf("%+v", err)
-				}
-				draw()
 			}
 		}
 	}
@@ -139,6 +219,11 @@ func main() {
 
 			if ev.Rune() == 'q' {
 				return
+			}
+
+			if ev.Rune() == 'e' || ev.Rune() == 'E' {
+				handleInteractionKey()
+				continue
 			}
 
 			// Restaurer la tuile originale à l'ancienne position

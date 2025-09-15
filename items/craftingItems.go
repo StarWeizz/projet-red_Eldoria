@@ -11,6 +11,14 @@ func (c CraftingItem) GetPrice() int {
 	return c.Price
 }
 
+func (c CraftingItem) GetName() string {
+	return c.Name
+}
+
+func (c CraftingItem) GetDescription() string {
+	return c.Description
+}
+
 var CraftingItems = map[string]CraftingItem{
 	"Bâton": {
 		Name:        "Bâton",
