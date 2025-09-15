@@ -23,14 +23,33 @@ func main() {
 
 	defer screen.Fini()
 
-	// Créer plusieurs mondes
-	worldList := []*worlds.World{
-		worlds.NewGrid("Monde Ynovia", 80, 35, 10, 10),
-		worlds.NewGrid("Monde Eldoria", 40, 25, 5, 5),
+	// Créer plusieurs mondes à partir des configurations JSON
+	worldList := []*worlds.World{}
+
+	// Charger le monde Ynovia depuis JSON
+	ynoviaConfig, err := worlds.LoadWorldConfig("configs/ynovia.json")
+	if err != nil {
+		fmt.Printf("Erreur lors du chargement de ynovia.json: %v\n", err)
+		fmt.Println("Utilisation du monde par défaut...")
+		worldList = append(worldList, worlds.NewGrid("Monde Ynovia", 80, 35, 10, 10))
+	} else {
+		worldList = append(worldList, worlds.NewWorldFromConfig(ynoviaConfig))
+	}
+
+	// Charger le monde Eldoria depuis JSON
+	eldoriaConfig, err := worlds.LoadWorldConfig("configs/eldoria.json")
+	if err != nil {
+		fmt.Printf("Erreur lors du chargement de eldoria.json: %v\n", err)
+		fmt.Println("Utilisation du monde par défaut...")
+		worldList = append(worldList, worlds.NewGrid("Monde Eldoria", 40, 25, 5, 5))
+	} else {
+		worldList = append(worldList, worlds.NewWorldFromConfig(eldoriaConfig))
 	}
 	currentWorld := 0
 
 	world := worldList[currentWorld]
+	// Sauvegarder la tuile originale et placer le joueur
+	world.OriginalTile = world.Grid[world.PlayerY][world.PlayerX]
 	world.Grid[world.PlayerY][world.PlayerX] = '😀'
 
 	draw := func() {
@@ -38,7 +57,11 @@ func main() {
 		w := worldList[currentWorld]
 
 		// Topbar
-		topbar := fmt.Sprintf("%s - 100/100 ♥ - %s", "joueur", w.Name)
+		hiddenStatus := ""
+		if w.IsPlayerHidden() {
+			hiddenStatus = " - 🌿 CACHÉ des monstres"
+		}
+		topbar := fmt.Sprintf("%s - 100/100 ♥ - %s%s", "joueur", w.Name, hiddenStatus)
 		for i, r := range topbar {
 			screen.SetContent(i, 0, r, nil, tcell.StyleDefault)
 		}
@@ -97,8 +120,8 @@ func main() {
 
 			if ev.Key() == tcell.KeyTab {
 				// changer de monde
-				// retirer le joueur du monde courant
-				worldList[currentWorld].Grid[worldList[currentWorld].PlayerY][worldList[currentWorld].PlayerX] = '🟫'
+				// restaurer la tuile originale dans le monde courant
+				worldList[currentWorld].Grid[worldList[currentWorld].PlayerY][worldList[currentWorld].PlayerX] = worldList[currentWorld].OriginalTile
 
 				// changer de monde
 				currentWorld = (currentWorld + 1) % len(worldList)
@@ -114,26 +137,30 @@ func main() {
 				return
 			}
 
-			w.Grid[w.PlayerY][w.PlayerX] = '🟫'
+			// Restaurer la tuile originale à l'ancienne position
+			w.Grid[w.PlayerY][w.PlayerX] = w.OriginalTile
 
 			switch ev.Key() {
 			case tcell.KeyUp:
-				if w.PlayerY > 0 && isWalkable(w.Grid[w.PlayerY-1][w.PlayerX]) {
+				if w.PlayerY > 0 && w.IsWalkableFromConfig(w.Grid[w.PlayerY-1][w.PlayerX]) {
 					w.PlayerY--
 				}
 			case tcell.KeyDown:
-				if w.PlayerY < w.Height-1 && isWalkable(w.Grid[w.PlayerY+1][w.PlayerX]) {
+				if w.PlayerY < w.Height-1 && w.IsWalkableFromConfig(w.Grid[w.PlayerY+1][w.PlayerX]) {
 					w.PlayerY++
 				}
 			case tcell.KeyRight:
-				if w.PlayerX < w.Width-1 && isWalkable(w.Grid[w.PlayerY][w.PlayerX+1]) {
+				if w.PlayerX < w.Width-1 && w.IsWalkableFromConfig(w.Grid[w.PlayerY][w.PlayerX+1]) {
 					w.PlayerX++
 				}
 			case tcell.KeyLeft:
-				if w.PlayerX > 0 && isWalkable(w.Grid[w.PlayerY][w.PlayerX-1]) {
+				if w.PlayerX > 0 && w.IsWalkableFromConfig(w.Grid[w.PlayerY][w.PlayerX-1]) {
 					w.PlayerX--
 				}
 			}
+
+			// Sauvegarder la nouvelle tuile originale
+			w.OriginalTile = w.Grid[w.PlayerY][w.PlayerX]
 
 			draw()
 			checkInteraction()
@@ -145,28 +172,37 @@ func main() {
 	}
 }
 
-func isWalkable(tile rune) bool {
-	switch tile {
-	case '🟫': // mur marron
-		return true
-	case '⬜': // mur blanc
-		return false
-	}
-	return true
-}
-
 func showIntro(screen tcell.Screen) {
 	screen.Clear()
 
 	// Texte de bienvenue
 	intro := []string{
-		"👋 Bienvenue dans le jeu !",
+
+		` _______   ___       ________  ________  ________  ___  ________     `,
+		`|\  ___ \ |\  \     |\   ___ \|\   __  \|\   __  \|\  \|\   __  \    `,
+		`\ \   __/|\ \  \    \ \  \_|\ \ \  \|\  \ \  \|\  \ \  \ \  \|\  \   `,
+		` \ \  \_|/_\ \  \    \ \  \ \\ \ \  \\\  \ \   _  _\ \  \ \   __  \  `,
+		`  \ \  \_|\ \ \  \____\ \  \_\\ \ \  \\\  \ \  \\  \\ \  \ \  \ \  \ `,
+		`   \ \_______\ \_______\ \_______\ \_______\ \__\\ _\\ \__\ \__\ \__\`,
+		`    \|_______|\|_______|\|_______|\|_______|\|__|\|__|\|__|\|__|\|__|`,
+		`                                                                     `,
+		`                                                                     `,
+		`                                                                     `,
+		"👋 Bienvenue dans Eldoria !",
 		"",
+		"Plongez dans le village d'Ynovia afin de percer ses mystères.",
+		"Partez à la rencontre d'Emeryn, le guide du village, et écoutez le afin d'en apprendre davantage sur cet endroit.",
+		"Vous découverirez sûrement que le village cache un portail qui mène vers un autre monde... Mais méfiez-vous des monstres qui rôdent... et du boss Maximor !",
+		"",
+		"⚠️ Attention : Ce jeu est en version alpha. Certaines fonctionnalités peuvent être incomplètes ou instables.",
+		"",
+		"Commandes :",
 		"Déplacez votre personnage avec les flèches du clavier.",
 		"Changez de monde avec [TAB].",
 		"Quittez avec [q].",
 		"",
 		"Appuyez sur [x] pour commencer...",
+		"",
 	}
 
 	// Centrer le texte

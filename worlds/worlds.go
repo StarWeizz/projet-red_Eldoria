@@ -6,6 +6,8 @@ type World struct {
 	Width, Height int
 	PlayerX       int
 	PlayerY       int
+	Config        *WorldConfig // Configuration du monde pour les interactions
+	OriginalTile  rune         // Sauvegarde de la tuile originale sous le joueur
 }
 
 // Fonction pour créer une grille simple avec bordure
@@ -25,11 +27,13 @@ func NewGrid(name string, width, height int, specialX, specialY int) *World {
 		grid[specialY][specialX] = '🤭'
 	}
 	return &World{
-		Name:    name,
-		Grid:    grid,
-		Width:   width,
-		Height:  height,
-		PlayerX: 1, // position initiale du joueur
-		PlayerY: 1,
+		Name:         name,
+		Grid:         grid,
+		Width:        width,
+		Height:       height,
+		PlayerX:      1, // position initiale du joueur
+		PlayerY:      1,
+		Config:       nil, // Pas de configuration pour les mondes créés à l'ancienne
+		OriginalTile: '🟫', // Tuile par défaut
 	}
 }

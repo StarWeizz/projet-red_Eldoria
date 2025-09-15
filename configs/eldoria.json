@@ -1,0 +1,73 @@
+{
+  "name": "Monde Eldoria",
+  "width": 40,
+  "height": 25,
+  "player_start_x": 2,
+  "player_start_y": 2,
+  "default_tile": "🟫",
+  "border_tile": "🧱",
+  "game_objects": {
+    "castle": {
+      "symbol": "🏰",
+      "name": "Château",
+      "walkable": false,
+      "interaction": "castle"
+    },
+    "tree": {
+      "symbol": "🌲",
+      "name": "Sapin",
+      "walkable": true,
+      "interaction": "hidden"
+    },
+    "mushroom": {
+      "symbol": "🍄",
+      "name": "Champignon",
+      "walkable": true,
+      "interaction": "mushroom"
+    },
+    "sword": {
+      "symbol": "⚔️",
+      "name": "Épée",
+      "walkable": true,
+      "interaction": "weapon"
+    },
+    "shield": {
+      "symbol": "🛡️",
+      "name": "Bouclier",
+      "walkable": true,
+      "interaction": "armor"
+    },
+    "dragon": {
+      "symbol": "🐉",
+      "name": "Dragon",
+      "walkable": false,
+      "interaction": "boss"
+    },
+    "fire": {
+      "symbol": "🔥",
+      "name": "Feu",
+      "walkable": false,
+      "interaction": "damage"
+    },
+    "potion": {
+      "symbol": "🧪",
+      "name": "Potion",
+      "walkable": true,
+      "interaction": "heal"
+    }
+  },
+  "objects": [
+    {"x": 20, "y": 12, "object": "castle"},
+    {"x": 5, "y": 5, "object": "tree"},
+    {"x": 8, "y": 8, "object": "mushroom"},
+    {"x": 15, "y": 6, "object": "sword"},
+    {"x": 25, "y": 8, "object": "shield"},
+    {"x": 35, "y": 20, "object": "dragon"},
+    {"x": 34, "y": 20, "object": "fire"},
+    {"x": 36, "y": 20, "object": "fire"},
+    {"x": 10, "y": 15, "object": "potion"},
+    {"x": 30, "y": 5, "object": "tree"},
+    {"x": 12, "y": 20, "object": "mushroom"},
+    {"x": 18, "y": 18, "object": "potion"}
+  ]
+}
