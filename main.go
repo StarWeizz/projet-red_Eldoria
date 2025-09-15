@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"eldoria/money"
 	"eldoria/worlds"
 
 	"github.com/gdamore/tcell/v2"
@@ -47,6 +48,9 @@ func main() {
 	}
 	currentWorld := 0
 
+	// Initialiser la money du joueur
+	playerMoney := money.NewMoney(100)
+
 	world := worldList[currentWorld]
 	// Sauvegarder la tuile originale et placer le joueur
 	world.OriginalTile = world.Grid[world.PlayerY][world.PlayerX]
@@ -61,7 +65,7 @@ func main() {
 		if w.IsPlayerHidden() {
 			hiddenStatus = " - 🌿 CACHÉ des monstres"
 		}
-		topbar := fmt.Sprintf("%s - 100/100 ♥ - %s%s", "joueur", w.Name, hiddenStatus)
+		topbar := fmt.Sprintf("%s - 100/100 ♥ - 💰 %d - %s%s", "joueur", playerMoney.Get(), w.Name, hiddenStatus)
 		for i, r := range topbar {
 			screen.SetContent(i, 0, r, nil, tcell.StyleDefault)
 		}

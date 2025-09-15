@@ -1,5 +1,4 @@
 package forgeron
-package forgeron
 
 import (
 	"eldoria/items"

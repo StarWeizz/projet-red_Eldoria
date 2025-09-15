@@ -1,4 +1,3 @@
-package player
 package createcharacter
 
 import (

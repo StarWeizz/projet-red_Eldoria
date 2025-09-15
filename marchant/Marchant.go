@@ -1,5 +1,4 @@
 package marchant
-package marchant
 
 import (
 	items "eldoria/items"

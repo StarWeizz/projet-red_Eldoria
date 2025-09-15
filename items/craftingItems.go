@@ -1,5 +1,4 @@
 package items
-package items
 
 type CraftingItem struct {
 	Name        string
