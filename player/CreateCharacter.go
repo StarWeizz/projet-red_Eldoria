@@ -102,7 +102,7 @@ func CreateCharacter() *Character {
 	maxHP := 100
 	switch chosenClass {
 	case "Guerrier":
-		maxHP = 100
+		maxHP = 10
 	case "Mage":
 		maxHP = 80
 	case "Chasseur":
