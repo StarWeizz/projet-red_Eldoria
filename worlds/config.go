@@ -14,17 +14,27 @@ type GameObject struct {
 	Interaction string `json:"interaction"` // Type d'interaction (ex: "chest", "door", etc.)
 }
 
+type Enemy struct {
+	Name   string `json:"name"`
+	Symbol string `json:"symbol"`
+	HP     int    `json:"hp"`
+	Attack int    `json:"attack"`
+	X      int    `json:"x"`
+	Y      int    `json:"y"`
+}
+
 // Configuration d'un monde
 type WorldConfig struct {
-	Name        string                `json:"name"`
-	Width       int                   `json:"width"`
-	Height      int                   `json:"height"`
-	PlayerStartX int                  `json:"player_start_x"`
-	PlayerStartY int                  `json:"player_start_y"`
-	DefaultTile  string               `json:"default_tile"`
-	BorderTile   string               `json:"border_tile"`
-	Objects     []ObjectPlacement     `json:"objects"`
-	GameObjects map[string]GameObject `json:"game_objects"`
+	Name         string                `json:"name"`
+	Width        int                   `json:"width"`
+	Height       int                   `json:"height"`
+	PlayerStartX int                   `json:"player_start_x"`
+	PlayerStartY int                   `json:"player_start_y"`
+	DefaultTile  string                `json:"default_tile"`
+	BorderTile   string                `json:"border_tile"`
+	Objects      []ObjectPlacement     `json:"objects"`
+	GameObjects  map[string]GameObject `json:"game_objects"`
+	Enemies      []Enemy               `json:"enemies"`
 }
 
 // Placement d'un objet sur la grille
@@ -86,7 +96,7 @@ func NewWorldFromConfig(config *WorldConfig) *World {
 
 	// Sauvegarder la tuile originale à la position du joueur
 	originalTile := grid[config.PlayerStartY][config.PlayerStartX]
-	
+
 	return &World{
 		Name:         config.Name,
 		Grid:         grid,
@@ -94,7 +104,7 @@ func NewWorldFromConfig(config *WorldConfig) *World {
 		Height:       config.Height,
 		PlayerX:      config.PlayerStartX,
 		PlayerY:      config.PlayerStartY,
-		Config:       config, // Stocker la config pour les interactions
+		Config:       config,       // Stocker la config pour les interactions
 		OriginalTile: originalTile, // Sauvegarder la tuile originale
 	}
 }
@@ -125,13 +135,13 @@ func (w *World) IsPlayerHidden() bool {
 
 	currentTile := w.Grid[w.PlayerY][w.PlayerX]
 	tileStr := string(currentTile)
-	
+
 	for _, gameObj := range w.Config.GameObjects {
 		if gameObj.Symbol == tileStr && gameObj.Interaction == "hidden" {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -143,4 +153,30 @@ func isWalkableOld(tile rune) bool {
 		return false
 	}
 	return true
+}
+
+// Vérifier s'il y a un ennemi sur la position du joueur
+func (w *World) GetEnemyAtPlayer() *Enemy {
+	for i := range w.Config.Enemies {
+		enemy := &w.Config.Enemies[i]
+		if enemy.X == w.PlayerX && enemy.Y == w.PlayerY && enemy.HP > 0 {
+			return enemy
+		}
+	}
+	return nil
+}
+
+// Combat simple : le joueur attaque l'ennemi
+func (w *World) AttackEnemy(damage int) {
+	enemy := w.GetEnemyAtPlayer()
+	if enemy != nil {
+		enemy.HP -= damage
+		fmt.Printf("Tu infliges %d dégâts à %s ! Il reste %d PV.\n", damage, enemy.Name, enemy.HP)
+		if enemy.HP <= 0 {
+			fmt.Printf("%s est vaincu !\n", enemy.Name)
+			w.Grid[enemy.Y][enemy.X] = []rune(w.Config.DefaultTile)[0] // Retirer l'ennemi de la grille
+		}
+	} else {
+		fmt.Println("Aucun ennemi ici.")
+	}
 }

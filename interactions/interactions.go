@@ -7,8 +7,10 @@ import (
 	"time"
 
 	inventory "eldoria/Inventory"
+	"eldoria/combat"
 	"eldoria/items"
 	"eldoria/money"
+	createcharacter "eldoria/player"
 	"eldoria/worlds"
 )
 
@@ -54,7 +56,7 @@ type InteractionResult struct {
 	RespawnTime  time.Duration
 }
 
-func (im *InteractionManager) HandleInteraction(world *worlds.World, x, y int, interactionType string) *InteractionResult {
+func (im *InteractionManager) HandleInteraction(world *worlds.World, player *createcharacter.Character, x, y int, interactionType string) *InteractionResult {
 	switch interactionType {
 	case "pickup":
 		return im.handlePickup(world, x, y)
@@ -68,6 +70,20 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, x, y int, i
 		return im.handleMerchant(world, x, y)
 	case "blacksmith":
 		return im.handleBlacksmith(world, x, y)
+	case "monster":
+		monster := combat.GetRandomMonster()
+		combat.StartCombat(player, monster) // <-- passer l'instance du joueur
+		if player.CurrentHP > 0 {
+			return &InteractionResult{
+				Success: true,
+				Message: fmt.Sprintf("Vous avez vaincu le %s ! 🏆", monster.Name),
+			}
+		} else {
+			return &InteractionResult{
+				Success: false,
+				Message: fmt.Sprintf("Vous avez été vaincu par le %s... 💀", monster.Name),
+			}
+		}
 	default:
 		return &InteractionResult{
 			Success: false,
@@ -183,8 +199,8 @@ func (im *InteractionManager) BuyItem(itemIndex int) *InteractionResult {
 	if im.playerMoney.Remove(shopItem.Price) {
 		im.inventory.Add(shopItem.Item, 1)
 		return &InteractionResult{
-			Success: true,
-			Message: fmt.Sprintf("✅ Vous avez acheté %s pour %d 💰 ! Il vous reste %d 💰.", shopItem.Item.GetName(), shopItem.Price, im.playerMoney.Get()),
+			Success:    true,
+			Message:    fmt.Sprintf("✅ Vous avez acheté %s pour %d 💰 ! Il vous reste %d 💰.", shopItem.Item.GetName(), shopItem.Price, im.playerMoney.Get()),
 			ItemGained: shopItem.Item,
 		}
 	}

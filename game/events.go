@@ -18,7 +18,7 @@ func (gs *GameState) CheckInteraction() {
 	// Vérifier si le joueur est sur une porte (interaction automatique)
 	currentInteraction := w.GetInteractionType(w.PlayerX, w.PlayerY)
 	if currentInteraction == "door" {
-		result := gs.InteractionManager.HandleInteraction(w, w.PlayerX, w.PlayerY, "door")
+		result := gs.InteractionManager.HandleInteraction(w, gs.PlayerCharacter, w.PlayerX, w.PlayerY, "door")
 
 		if result.Success {
 			// Mettre à jour le message de lore au lieu de quitter l'écran
@@ -46,7 +46,7 @@ func (gs *GameState) HandleInteractionKey() {
 		if x >= 0 && x < w.Width && y >= 0 && y < w.Height {
 			interactionType := w.GetInteractionType(x, y)
 			if interactionType != "none" && interactionType != "" && interactionType != "door" {
-				result := gs.InteractionManager.HandleInteraction(w, x, y, interactionType)
+				result := gs.InteractionManager.HandleInteraction(w, gs.PlayerCharacter, x, y, interactionType)
 
 				// Afficher le message dans la zone de lore au lieu de quitter l'écran
 				gs.LoreMessage = result.Message
