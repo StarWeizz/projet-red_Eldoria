@@ -1,13 +1,13 @@
 package inventory
 
 import (
-	items "eldoria/items"
+	"eldoria/items"
 	"fmt"
 )
 
 type Inventory struct {
-	Items map[string]int
-	Refs  map[string]items.Item
+	Items map[string]int        // quantité
+	Refs  map[string]items.Item // références vers les objets
 }
 
 func NewInventory() *Inventory {
@@ -42,7 +42,6 @@ func (inv *Inventory) List() {
 	}
 }
 
-// GetInventoryString retourne le contenu de l'inventaire sous forme de string
 func (inv *Inventory) GetInventoryString() string {
 	if len(inv.Items) == 0 {
 		return "🎒 Inventaire vide\n\nVous n'avez aucun objet dans votre sac à dos."

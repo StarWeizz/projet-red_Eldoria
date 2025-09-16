@@ -8,23 +8,23 @@ import (
 	inventory "eldoria/Inventory"
 	"eldoria/interactions"
 	"eldoria/money"
-	"eldoria/worlds"
 	createcharacter "eldoria/player"
+	"eldoria/worlds"
 
 	"github.com/gdamore/tcell/v2"
 )
 
 // GameState représente l'état du jeu
 type GameState struct {
-	Screen              tcell.Screen
-	WorldList           []*worlds.World
-	CurrentWorld        int
-	PlayerCharacter     *createcharacter.Character
-	PlayerMoney         *money.Money
-	PlayerInventory     *inventory.Inventory
-	InteractionManager  *interactions.InteractionManager
-	LoreMessage         string
-	ShowingInventory    bool
+	Screen             tcell.Screen
+	WorldList          []*worlds.World
+	CurrentWorld       int
+	PlayerCharacter    *createcharacter.Character
+	PlayerMoney        *money.Money
+	PlayerInventory    *inventory.Inventory
+	InteractionManager *interactions.InteractionManager
+	LoreMessage        string
+	ShowingInventory   bool
 }
 
 // NewGameState crée un nouvel état de jeu

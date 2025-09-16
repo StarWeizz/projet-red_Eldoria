@@ -12,23 +12,23 @@ func main() {
 	// Initialiser l'écran
 	screen, err := tcell.NewScreen()
 	if err != nil {
-		log.Fatalf("%+v", err)
+		log.Fatalf("Erreur écran: %+v", err)
 	}
 	if err := screen.Init(); err != nil {
-		log.Fatalf("%+v", err)
+		log.Fatalf("Erreur Init écran: %+v", err)
 	}
 	defer screen.Fini()
 
 	// Créer le personnage via l'intro
 	playerCharacter := game.ShowIntroAndCreateCharacter(screen)
 
-	// Créer l'état du jeu
+	// Créer l'état du jeu avec le joueur
 	gameState := game.NewGameState(screen, playerCharacter)
 
 	// Charger les mondes
 	gameState.LoadWorlds()
 
-	// Initialiser le joueur
+	// Initialiser le joueur dans le monde courant
 	gameState.InitializePlayer()
 
 	// Démarrer le système de respawn
@@ -44,9 +44,16 @@ func main() {
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
 			// Gestion des touches spéciales
-			if ev.Key() == tcell.KeyTab {
+			switch ev.Key() {
+			case tcell.KeyTab:
 				gameState.SwitchWorld()
 				gameState.Draw()
+				continue
+			case tcell.KeyUp, tcell.KeyDown, tcell.KeyLeft, tcell.KeyRight:
+				if gameState.MovePlayer(ev.Key()) {
+					gameState.Draw()
+					gameState.CheckInteraction()
+				}
 				continue
 			}
 
@@ -56,30 +63,16 @@ func main() {
 				screen.Clear()
 				screen.Show()
 				return
-
 			case 'e', 'E':
 				gameState.HandleInteractionKey()
-				continue
-
+				gameState.Draw()
 			case 'i', 'I':
 				gameState.ToggleInventory()
 				gameState.Draw()
-				continue
-
 			case '1', '2', '3', '4', '5':
 				itemIndex := int(ev.Rune() - '1')
 				gameState.HandleShopPurchase(itemIndex)
 				gameState.Draw()
-				continue
-			}
-
-			// Gestion du mouvement
-			if ev.Key() == tcell.KeyUp || ev.Key() == tcell.KeyDown ||
-			   ev.Key() == tcell.KeyLeft || ev.Key() == tcell.KeyRight {
-				if gameState.MovePlayer(ev.Key()) {
-					gameState.Draw()
-					gameState.CheckInteraction()
-				}
 			}
 
 		case *tcell.EventResize:

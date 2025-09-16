@@ -1,10 +1,6 @@
 package items
 
-//import (
-//money "eldoria/money"
-//)
-
-type weapon struct {
+type Weapon struct {
 	Name        string
 	Description string
 	Damage      int
@@ -13,43 +9,43 @@ type weapon struct {
 	Category    string
 }
 
-func (w weapon) GetName() string {
+func (w Weapon) GetName() string {
 	return w.Name
 }
-func (w weapon) GetDescription() string {
+func (w Weapon) GetDescription() string {
 	return w.Description
 }
-func (w weapon) GetPrice() int {
+func (w Weapon) GetPrice() int {
 	return w.Price
 }
+func (w Weapon) GetDamage() int {
+	return w.Damage
+}
 
-var WeaponList = map[string]weapon{
-	"Lame rouillé": {
-		Name:        "Lame rouillé",
-		Description: "",
+// Liste des armes disponibles
+var WeaponList = map[string]Weapon{
+	"Lame rouillée": {
+		Name:        "Lame rouillée",
+		Description: "Une vieille lame usée par le temps.",
 		Damage:      5,
 		Price:       35,
 		Level:       1,
 		Category:    "Sword",
-		//	DropRate:    60,
 	},
-	"épée de chevalier": {
-		Name:        "épée de chevalier",
-		Description: "",
+	"Épée de chevalier": {
+		Name:        "Épée de chevalier",
+		Description: "Une épée bien forgée, robuste.",
 		Damage:      10,
 		Level:       2,
 		Category:    "Sword",
-		//	DropRate:    20,
 	},
-	"Epée Démoniaque": {
-		Name:        "Epée Démoniaque",
-		Description: "",
+	"Épée démoniaque": {
+		Name:        "Épée démoniaque",
+		Description: "Une arme maudite aux pouvoirs obscurs.",
 		Damage:      15,
 		Level:       3,
 		Category:    "Sword",
-		//	DropRate:    10,
 	},
-
 	"Grimoire": {
 		Name:        "Grimoire",
 		Description: "",
