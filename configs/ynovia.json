@@ -72,6 +72,18 @@
       "name": "Trésor",
       "walkable": true,
       "interaction": "treasure"
+    },
+    "merchant": {
+      "symbol": "🏪",
+      "name": "Marchand",
+      "walkable": false,
+      "interaction": "merchant"
+    },
+    "blacksmith": {
+      "symbol": "⚒️",
+      "name": "Forgeron",
+      "walkable": false,
+      "interaction": "blacksmith"
     }
   },
   "objects": [
@@ -882,6 +894,9 @@
     {"x": 40, "y": 33, "object": "house_wall"},
     {"x": 42, "y": 33, "object": "house_wall"},
     {"x": 41, "y": 28, "object": "house_wall"},
-    {"x": 41, "y": 33, "object": "house_wall"}
+    {"x": 41, "y": 33, "object": "house_wall"},
+
+    {"x": 15, "y": 15, "object": "merchant"},
+    {"x": 35, "y": 10, "object": "blacksmith"}
   ]
 }

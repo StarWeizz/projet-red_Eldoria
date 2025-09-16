@@ -6,18 +6,37 @@ import (
 
 	inventory "eldoria/Inventory"
 	"eldoria/items"
+	"eldoria/money"
 	"eldoria/worlds"
 )
+
+type ShopItem struct {
+	Item  items.Item
+	Price int
+}
 
 type InteractionManager struct {
 	respawnQueue map[string]time.Time // Clé: x_y_world, Valeur: temps de respawn
 	inventory    *inventory.Inventory
+	playerMoney  *money.Money
+	shopItems    []ShopItem
 }
 
-func NewInteractionManager(inv *inventory.Inventory) *InteractionManager {
+func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *InteractionManager {
+	// Créer les objets de la boutique
+	shopItems := []ShopItem{
+		{Item: items.CraftingItems["Bâton"], Price: 10},
+		{Item: items.CraftingItems["Pierre"], Price: 8},
+		{Item: items.CraftingItems["Papier"], Price: 15},
+		{Item: items.CraftingItems["Parchemin"], Price: 25},
+		{Item: items.CraftingItems["Ecaille d'Azador"], Price: 50},
+	}
+
 	return &InteractionManager{
 		respawnQueue: make(map[string]time.Time),
 		inventory:    inv,
+		playerMoney:  playerMoney,
+		shopItems:    shopItems,
 	}
 }
 
@@ -39,6 +58,10 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, x, y int, i
 		return im.handleDoor(world, x, y)
 	case "treasure":
 		return im.handleTreasure(world, x, y)
+	case "merchant":
+		return im.handleMerchant(world, x, y)
+	case "blacksmith":
+		return im.handleBlacksmith(world, x, y)
 	default:
 		return &InteractionResult{
 			Success: false,
@@ -112,6 +135,63 @@ func (im *InteractionManager) handleTreasure(world *worlds.World, x, y int) *Int
 	return &InteractionResult{
 		Success: true,
 		Message: "💎 Trésor trouvé !",
+	}
+}
+
+func (im *InteractionManager) handleMerchant(world *worlds.World, x, y int) *InteractionResult {
+	// Afficher la liste des objets disponibles
+	shopMessage := "🏪 Marchand : \"Bienvenue dans ma boutique !\"\n\nObjets disponibles :\n"
+	for i, shopItem := range im.shopItems {
+		shopMessage += fmt.Sprintf("%d. %s - %d 💰\n", i+1, shopItem.Item.GetName(), shopItem.Price)
+	}
+	shopMessage += "\nVotre argent : " + fmt.Sprintf("%d 💰", im.playerMoney.Get())
+	shopMessage += "\n\nAppuyez sur [1-5] pour acheter un objet, ou [Échap] pour quitter."
+
+	return &InteractionResult{
+		Success: true,
+		Message: shopMessage,
+	}
+}
+
+// Nouvelle méthode pour gérer l'achat d'un objet spécifique
+func (im *InteractionManager) BuyItem(itemIndex int) *InteractionResult {
+	if itemIndex < 0 || itemIndex >= len(im.shopItems) {
+		return &InteractionResult{
+			Success: false,
+			Message: "❌ Objet invalide.",
+		}
+	}
+
+	shopItem := im.shopItems[itemIndex]
+
+	// Vérifier si le joueur a assez d'argent
+	if im.playerMoney.Get() < shopItem.Price {
+		return &InteractionResult{
+			Success: false,
+			Message: fmt.Sprintf("❌ Pas assez d'argent ! Il vous faut %d 💰 mais vous n'avez que %d 💰.", shopItem.Price, im.playerMoney.Get()),
+		}
+	}
+
+	// Effectuer la transaction
+	if im.playerMoney.Remove(shopItem.Price) {
+		im.inventory.Add(shopItem.Item, 1)
+		return &InteractionResult{
+			Success: true,
+			Message: fmt.Sprintf("✅ Vous avez acheté %s pour %d 💰 ! Il vous reste %d 💰.", shopItem.Item.GetName(), shopItem.Price, im.playerMoney.Get()),
+			ItemGained: shopItem.Item,
+		}
+	}
+
+	return &InteractionResult{
+		Success: false,
+		Message: "❌ Erreur lors de l'achat.",
+	}
+}
+
+func (im *InteractionManager) handleBlacksmith(world *worlds.World, x, y int) *InteractionResult {
+	return &InteractionResult{
+		Success: true,
+		Message: "⚒️ Forgeron : \"Salut aventurier ! Je peux forger des armes et armures pour toi. Tu as des matériaux à transformer ?\"",
 	}
 }
 
