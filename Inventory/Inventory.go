@@ -41,3 +41,18 @@ func (inv *Inventory) List() {
 		fmt.Printf("%s x%d - %s\n", name, qty, inv.Refs[name].GetDescription())
 	}
 }
+
+// GetInventoryString retourne le contenu de l'inventaire sous forme de string
+func (inv *Inventory) GetInventoryString() string {
+	if len(inv.Items) == 0 {
+		return "🎒 Inventaire vide\n\nVous n'avez aucun objet dans votre sac à dos."
+	}
+
+	result := "🎒 Contenu de votre inventaire :\n\n"
+	for name, qty := range inv.Items {
+		result += fmt.Sprintf("• %s x%d - %s\n", name, qty, inv.Refs[name].GetDescription())
+	}
+	result += "\nAppuyez sur [i] pour fermer l'inventaire."
+
+	return result
+}

@@ -2,11 +2,15 @@ package interactions
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	inventory "eldoria/Inventory"
+	"eldoria/combat"
 	"eldoria/items"
 	"eldoria/money"
+	createcharacter "eldoria/player"
 	"eldoria/worlds"
 )
 
@@ -23,13 +27,17 @@ type InteractionManager struct {
 }
 
 func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *InteractionManager {
-	// Créer les objets de la boutique
-	shopItems := []ShopItem{
-		{Item: items.CraftingItems["Bâton"], Price: 10},
-		{Item: items.CraftingItems["Pierre"], Price: 8},
-		{Item: items.CraftingItems["Papier"], Price: 15},
-		{Item: items.CraftingItems["Parchemin"], Price: 25},
-		{Item: items.CraftingItems["Ecaille d'Azador"], Price: 50},
+	// Créer les objets de la boutique automatiquement à partir de tous les CraftingItems
+	var shopItems []ShopItem
+	itemOrder := []string{"Bâton", "Pierre", "Papier", "Parchemin", "Ecaille d'Azador"}
+
+	for _, itemName := range itemOrder {
+		if item, exists := items.CraftingItems[itemName]; exists {
+			shopItems = append(shopItems, ShopItem{
+				Item:  item,
+				Price: item.GetPrice(),
+			})
+		}
 	}
 
 	return &InteractionManager{
@@ -48,7 +56,7 @@ type InteractionResult struct {
 	RespawnTime  time.Duration
 }
 
-func (im *InteractionManager) HandleInteraction(world *worlds.World, x, y int, interactionType string) *InteractionResult {
+func (im *InteractionManager) HandleInteraction(world *worlds.World, player *createcharacter.Character, x, y int, interactionType string) *InteractionResult {
 	switch interactionType {
 	case "pickup":
 		return im.handlePickup(world, x, y)
@@ -62,6 +70,20 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, x, y int, i
 		return im.handleMerchant(world, x, y)
 	case "blacksmith":
 		return im.handleBlacksmith(world, x, y)
+	case "monster":
+		monster := combat.GetRandomMonster()
+		combat.StartCombat(player, monster) // <-- passer l'instance du joueur
+		if player.CurrentHP > 0 {
+			return &InteractionResult{
+				Success: true,
+				Message: fmt.Sprintf("Vous avez vaincu le %s ! 🏆", monster.Name),
+			}
+		} else {
+			return &InteractionResult{
+				Success: false,
+				Message: fmt.Sprintf("Vous avez été vaincu par le %s... 💀", monster.Name),
+			}
+		}
 	default:
 		return &InteractionResult{
 			Success: false,
@@ -80,12 +102,13 @@ func (im *InteractionManager) handlePickup(world *worlds.World, x, y int) *Inter
 			im.inventory.Add(stoneItem, 1)
 
 			// Planifier le respawn dans 10 secondes
-			respawnKey := fmt.Sprintf("%d_%d_%s", x, y, world.Name)
+			// Utiliser un séparateur différent pour éviter les problèmes avec les espaces dans le nom du monde
+			respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
 			im.respawnQueue[respawnKey] = time.Now().Add(10 * time.Second)
 
 			return &InteractionResult{
 				Success:      true,
-				Message:      "🪨 Pierre ramassée !",
+				Message:      fmt.Sprintf("🪨 Pierre ramassée ! Respawn programmé en (%d,%d) dans 10s", x, y),
 				ItemGained:   stoneItem,
 				ShouldRemove: true,
 				RespawnTime:  10 * time.Second,
@@ -176,8 +199,8 @@ func (im *InteractionManager) BuyItem(itemIndex int) *InteractionResult {
 	if im.playerMoney.Remove(shopItem.Price) {
 		im.inventory.Add(shopItem.Item, 1)
 		return &InteractionResult{
-			Success: true,
-			Message: fmt.Sprintf("✅ Vous avez acheté %s pour %d 💰 ! Il vous reste %d 💰.", shopItem.Item.GetName(), shopItem.Price, im.playerMoney.Get()),
+			Success:    true,
+			Message:    fmt.Sprintf("✅ Vous avez acheté %s pour %d 💰 ! Il vous reste %d 💰.", shopItem.Item.GetName(), shopItem.Price, im.playerMoney.Get()),
 			ItemGained: shopItem.Item,
 		}
 	}
@@ -203,14 +226,31 @@ func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 	for respawnKey, respawnTime := range im.respawnQueue {
 		if now.After(respawnTime) {
 			// Parser la clé pour récupérer x, y et le nom du monde
-			var x, y int
-			var worldName string
-			fmt.Sscanf(respawnKey, "%d_%d_%s", &x, &y, &worldName)
+			parts := strings.Split(respawnKey, "|")
+			if len(parts) != 3 {
+				messages = append(messages, fmt.Sprintf("❌ Format respawn key invalide: %s", respawnKey))
+				delete(im.respawnQueue, respawnKey)
+				continue
+			}
+
+			x, err1 := strconv.Atoi(parts[0])
+			y, err2 := strconv.Atoi(parts[1])
+			worldName := parts[2]
+
+			if err1 != nil || err2 != nil {
+				messages = append(messages, fmt.Sprintf("❌ Erreur conversion coordonnées: %s", respawnKey))
+				delete(im.respawnQueue, respawnKey)
+				continue
+			}
 
 			if worldName == world.Name {
 				// Faire réapparaître l'objet
-				world.RespawnObject(x, y, "rock")
-				messages = append(messages, fmt.Sprintf("🪨 Un rocher a réapparu en (%d, %d)", x, y))
+				err := world.RespawnObject(x, y, "rock")
+				if err != nil {
+					messages = append(messages, fmt.Sprintf("❌ Erreur respawn: %v", err))
+				} else {
+					messages = append(messages, fmt.Sprintf("🪨 Un rocher a réapparu en (%d, %d)", x, y))
+				}
 			}
 
 			// Supprimer de la queue
