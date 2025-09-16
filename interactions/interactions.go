@@ -10,6 +10,7 @@ import (
 	"eldoria/combat"
 	"eldoria/items"
 	"eldoria/money"
+	"eldoria/npcs"
 	createcharacter "eldoria/player"
 	"eldoria/worlds"
 )
@@ -24,6 +25,7 @@ type InteractionManager struct {
 	inventory    *inventory.Inventory
 	playerMoney  *money.Money
 	shopItems    []ShopItem
+	emeryn       *npcs.NPC
 }
 
 func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *InteractionManager {
@@ -45,6 +47,7 @@ func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *
 		inventory:    inv,
 		playerMoney:  playerMoney,
 		shopItems:    shopItems,
+		emeryn:       npcs.CreateEmeryn(),
 	}
 }
 
@@ -59,7 +62,7 @@ type InteractionResult struct {
 func (im *InteractionManager) HandleInteraction(world *worlds.World, player *createcharacter.Character, x, y int, interactionType string) *InteractionResult {
 	switch interactionType {
 	case "pickup":
-		return im.handlePickup(world, x, y)
+		return im.handlePickup(world, player, x, y)
 	case "chest":
 		return im.handleChest(world, x, y)
 	case "door":
@@ -70,6 +73,8 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 		return im.handleMerchant(world, x, y)
 	case "blacksmith":
 		return im.handleBlacksmith(world, x, y)
+	case "emeryn":
+		return im.handleEmeryn(player)
 	case "monster":
 		monster := combat.GetRandomMonster()
 		combat.StartCombat(player, monster) // <-- passer l'instance du joueur
@@ -92,7 +97,7 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 	}
 }
 
-func (im *InteractionManager) handlePickup(world *worlds.World, x, y int) *InteractionResult {
+func (im *InteractionManager) handlePickup(world *worlds.World, player *createcharacter.Character, x, y int) *InteractionResult {
 	objectType := world.GetObjectTypeAt(x, y)
 
 	switch objectType {
@@ -101,6 +106,13 @@ func (im *InteractionManager) handlePickup(world *worlds.World, x, y int) *Inter
 		if stoneItem, exists := items.CraftingItems["Pierre"]; exists {
 			im.inventory.Add(stoneItem, 1)
 
+			// Donner de l'EXP pour la récolte
+			expMessage := player.AddExperience(1)
+			message := "🪨 Pierre ramassée !"
+			if expMessage != "" {
+				message += "\n" + expMessage
+			}
+
 			// Planifier le respawn dans 10 secondes
 			// Utiliser un séparateur différent pour éviter les problèmes avec les espaces dans le nom du monde
 			respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
@@ -108,7 +120,7 @@ func (im *InteractionManager) handlePickup(world *worlds.World, x, y int) *Inter
 
 			return &InteractionResult{
 				Success:      true,
-				Message:      fmt.Sprintf("🪨 Pierre ramassée ! Respawn programmé en (%d,%d) dans 10s", x, y),
+				Message:      message,
 				ItemGained:   stoneItem,
 				ShouldRemove: true,
 				RespawnTime:  10 * time.Second,
@@ -163,12 +175,10 @@ func (im *InteractionManager) handleTreasure(world *worlds.World, x, y int) *Int
 
 func (im *InteractionManager) handleMerchant(world *worlds.World, x, y int) *InteractionResult {
 	// Afficher la liste des objets disponibles
-	shopMessage := "🏪 Marchand : \"Bienvenue dans ma boutique !\"\n\nObjets disponibles :\n"
+	shopMessage := "💎 Sarhalia : \"Bienvenue dans ma boutique !\"\n\nArticles disponibles :\n"
 	for i, shopItem := range im.shopItems {
 		shopMessage += fmt.Sprintf("%d. %s - %d 💰\n", i+1, shopItem.Item.GetName(), shopItem.Price)
 	}
-	shopMessage += "\nVotre argent : " + fmt.Sprintf("%d 💰", im.playerMoney.Get())
-	shopMessage += "\n\nAppuyez sur [1-5] pour acheter un objet, ou [Échap] pour quitter."
 
 	return &InteractionResult{
 		Success: true,
@@ -218,6 +228,37 @@ func (im *InteractionManager) handleBlacksmith(world *worlds.World, x, y int) *I
 	}
 }
 
+func (im *InteractionManager) handleEmeryn(player *createcharacter.Character) *InteractionResult {
+	// Utiliser le nouveau système de messages d'Emeryn
+	message := im.emeryn.GetEmerynMessage(player)
+
+	return &InteractionResult{
+		Success: true,
+		Message: message,
+	}
+}
+
+// AdvanceEmerynInteraction fait avancer l'interaction avec Emeryn (appelé lors de l'appui sur espace)
+func (im *InteractionManager) AdvanceEmerynInteraction() {
+	im.emeryn.AdvanceEmerynPhase()
+}
+
+// CanAdvanceEmerynInteraction vérifie si on peut faire avancer l'interaction avec Emeryn
+func (im *InteractionManager) CanAdvanceEmerynInteraction() bool {
+	if im.emeryn == nil {
+		return false
+	}
+	return im.emeryn.CanAdvanceEmeryn()
+}
+
+// GetEmerynQuests retourne les quêtes d'Emeryn
+func (im *InteractionManager) GetEmerynQuests() []npcs.Quest {
+	if im.emeryn == nil {
+		return []npcs.Quest{}
+	}
+	return im.emeryn.Quests
+}
+
 // Méthode pour vérifier et respawner les objets
 func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 	var messages []string
@@ -247,9 +288,7 @@ func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 				// Faire réapparaître l'objet
 				err := world.RespawnObject(x, y, "rock")
 				if err != nil {
-					messages = append(messages, fmt.Sprintf("❌ Erreur respawn: %v", err))
-				} else {
-					messages = append(messages, fmt.Sprintf("🪨 Un rocher a réapparu en (%d, %d)", x, y))
+					messages = append(messages, fmt.Sprintf("❌ Erreur respawn du rocher: %v", err))
 				}
 			}
 
@@ -277,7 +316,7 @@ func (im *InteractionManager) CheckNearbyInteractions(world *worlds.World) []str
 		x, y := coord[0], coord[1]
 		if x >= 0 && x < world.Width && y >= 0 && y < world.Height {
 			interactionType := world.GetInteractionType(x, y)
-			if interactionType != "none" && interactionType != "" {
+			if interactionType != "none" && interactionType != "" && interactionType != "door" {
 				objectName := world.GetObjectNameAt(x, y)
 				availableInteractions = append(availableInteractions,
 					fmt.Sprintf("Appuyez sur [E] près de %s pour %s", objectName, interactionType))

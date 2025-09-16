@@ -56,3 +56,10 @@ func (inv *Inventory) GetInventoryString() string {
 
 	return result
 }
+
+func (inv *Inventory) HasItem(itemName string, minQty int) bool {
+	if qty, exists := inv.Items[itemName]; exists {
+		return qty >= minQty
+	}
+	return false
+}

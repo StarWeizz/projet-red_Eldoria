@@ -12,6 +12,7 @@ import (
 	createcharacter "eldoria/player"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/mattn/go-runewidth"
 )
 
 // GameState représente l'état du jeu
@@ -55,6 +56,92 @@ func (gs *GameState) GetInventoryCount() int {
 	return count
 }
 
+// GetCurrentQuest récupère la quête actuelle du joueur
+func (gs *GameState) GetCurrentQuest() string {
+	if gs.InteractionManager == nil {
+		return ""
+	}
+
+	// Accéder à la quête d'Emeryn
+	quests := gs.InteractionManager.GetEmerynQuests()
+	for _, quest := range quests {
+		if !quest.Completed && quest.CurrentStep < len(quest.Steps) {
+			currentStep := quest.Steps[quest.CurrentStep]
+
+			// Personnaliser les titres selon l'étape
+			switch quest.CurrentStep {
+			case 0:
+				return fmt.Sprintf("%s (%d/%d)", currentStep.Title, quest.CurrentStep+1, len(quest.Steps))
+			case 1:
+				return fmt.Sprintf("Tuer un Azador à la sortie du village (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+			case 2:
+				return fmt.Sprintf("Voir Valenric le forgeron (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+			default:
+				return fmt.Sprintf("%s (%d/%d)", currentStep.Title, quest.CurrentStep+1, len(quest.Steps))
+			}
+		}
+	}
+
+	return ""
+}
+
+// WrapText découpe un texte en lignes qui respectent la largeur maximale
+// et respecte les sauts de ligne explicites (\n)
+func (gs *GameState) WrapText(text string, maxWidth int) []string {
+	if maxWidth <= 0 {
+		return []string{text}
+	}
+
+	var allLines []string
+
+	// D'abord séparer par les sauts de ligne explicites
+	paragraphs := strings.Split(text, "\n")
+
+	for _, paragraph := range paragraphs {
+		if paragraph == "" {
+			// Ligne vide
+			allLines = append(allLines, "")
+			continue
+		}
+
+		words := strings.Fields(paragraph)
+		if len(words) == 0 {
+			allLines = append(allLines, "")
+			continue
+		}
+
+		currentLine := ""
+		for _, word := range words {
+			// Si ajouter ce mot dépasse la largeur max
+			if len(currentLine)+len(word)+1 > maxWidth {
+				if currentLine != "" {
+					allLines = append(allLines, currentLine)
+					currentLine = word
+				} else {
+					// Le mot lui-même est trop long, le couper
+					for len(word) > maxWidth {
+						allLines = append(allLines, word[:maxWidth])
+						word = word[maxWidth:]
+					}
+					currentLine = word
+				}
+			} else {
+				if currentLine != "" {
+					currentLine += " " + word
+				} else {
+					currentLine = word
+				}
+			}
+		}
+
+		if currentLine != "" {
+			allLines = append(allLines, currentLine)
+		}
+	}
+
+	return allLines
+}
+
 // LoadWorlds charge les mondes depuis les fichiers de configuration
 func (gs *GameState) LoadWorlds() {
 	// Charger le monde Ynovia depuis JSON
@@ -95,15 +182,54 @@ func (gs *GameState) Draw() {
 		hiddenStatus = " - 🌿 CACHÉ des monstres"
 	}
 	inventoryCount := gs.GetInventoryCount()
-	topbar := fmt.Sprintf("%s (%s) - %d/%d ♥ - 💰 %d - 🎒 %d items - %s - X:%d Y:%d%s",
+	currentQuest := gs.GetCurrentQuest()
+	questStatus := ""
+	if currentQuest != "" {
+		questStatus = fmt.Sprintf(" - ⚔️ %s", currentQuest)
+	}
+
+	// Formater avec des coordonnées de taille fixe pour éviter les variations
+	// Afficher l'EXP selon le niveau
+	expInfo := ""
+	if gs.PlayerCharacter.Level >= 5 {
+		expInfo = fmt.Sprintf("Lv%d(MAX)", gs.PlayerCharacter.Level)
+	} else {
+		nextLevelExp := gs.PlayerCharacter.GetExpForLevel(gs.PlayerCharacter.Level + 1)
+		expInfo = fmt.Sprintf("Lv%d(%d/%d)", gs.PlayerCharacter.Level, gs.PlayerCharacter.Experience, nextLevelExp)
+	}
+
+	topbar := fmt.Sprintf("%s (%s) - %d/%d ♥ - %s - 💰 %d - 🎒 %d items - %s - X:%02d Y:%02d%s%s",
 		gs.PlayerCharacter.Name, gs.PlayerCharacter.Class,
 		gs.PlayerCharacter.CurrentHP, gs.PlayerCharacter.MaxHP,
-		gs.PlayerMoney.Get(), inventoryCount, w.Name, w.PlayerX, w.PlayerY, hiddenStatus)
+		expInfo, gs.PlayerMoney.Get(), inventoryCount, w.Name, w.PlayerX, w.PlayerY, hiddenStatus, questStatus)
 
-	for i, r := range topbar {
-		if i < screenWidth {
-			gs.Screen.SetContent(i, 0, r, nil, tcell.StyleDefault)
+	// Effacer complètement la première ligne avant d'afficher la topbar
+	for i := 0; i < screenWidth; i++ {
+		gs.Screen.SetContent(i, 0, ' ', nil, tcell.StyleDefault)
+	}
+
+	// Afficher la topbar en gérant correctement la largeur des caractères Unicode
+	displayPos := 0
+	for _, r := range topbar {
+		charWidth := runewidth.RuneWidth(r)
+
+		// Vérifier s'il y a assez d'espace pour ce caractère
+		if displayPos + charWidth > screenWidth {
+			break
 		}
+
+		// Afficher le caractère
+		gs.Screen.SetContent(displayPos, 0, r, nil, tcell.StyleDefault)
+
+		// Si c'est un caractère large (emoji), marquer la position suivante comme occupée
+		if charWidth == 2 {
+			displayPos++
+			if displayPos < screenWidth {
+				gs.Screen.SetContent(displayPos, 0, ' ', nil, tcell.StyleDefault)
+			}
+		}
+
+		displayPos++
 	}
 
 	// Grille
@@ -140,10 +266,15 @@ func (gs *GameState) Draw() {
 			}
 		}
 	} else if gs.LoreMessage != "" {
-		// Afficher le message de lore en vert clair
-		for i, r := range gs.LoreMessage {
-			if i < screenWidth {
-				gs.Screen.SetContent(i, loreY, r, nil, tcell.StyleDefault.Foreground(tcell.ColorLightGreen))
+		// Afficher le message de lore avec retour à la ligne automatique
+		wrappedLines := gs.WrapText(gs.LoreMessage, screenWidth)
+		for lineIndex, line := range wrappedLines {
+			if lineIndex < 10 && loreY+lineIndex < bottomY { // Limiter à 10 lignes
+				for charIndex, r := range line {
+					if charIndex < screenWidth {
+						gs.Screen.SetContent(charIndex, loreY+lineIndex, r, nil, tcell.StyleDefault.Foreground(tcell.ColorLightGreen))
+					}
+				}
 			}
 		}
 	}

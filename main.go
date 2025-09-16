@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/exec"
 
 	"eldoria/game"
 
@@ -53,8 +55,15 @@ func main() {
 			// Gestion des touches par caractère
 			switch ev.Rune() {
 			case 'q', 'Q':
-				screen.Clear()
-				screen.Show()
+				// Restaurer le terminal proprement
+				screen.Fini()
+
+				// Restaurer complètement le terminal avec reset
+				cmd := exec.Command("reset")
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				cmd.Run()
+
 				return
 
 			case 'e', 'E':
@@ -71,11 +80,15 @@ func main() {
 				gameState.HandleShopPurchase(itemIndex)
 				gameState.Draw()
 				continue
+
+			case ' ':
+				gameState.HandleSpaceKey()
+				continue
 			}
 
 			// Gestion du mouvement
 			if ev.Key() == tcell.KeyUp || ev.Key() == tcell.KeyDown ||
-			   ev.Key() == tcell.KeyLeft || ev.Key() == tcell.KeyRight {
+				ev.Key() == tcell.KeyLeft || ev.Key() == tcell.KeyRight {
 				if gameState.MovePlayer(ev.Key()) {
 					gameState.Draw()
 					gameState.CheckInteraction()
