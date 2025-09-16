@@ -6,6 +6,7 @@ import (
 	money "eldoria/money"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -31,15 +32,48 @@ func capitalizeFirstLetter(s string) string {
 	return string(runes)
 }
 
+// Retourne (true, "") si valide, sinon (false, raison)
+func validateName(name string) (bool, string) {
+	runes := []rune(name)
+
+	// Vérifie longueur (en runes, pour gérer les accents correctement)
+	if len(runes) == 0 {
+		return false, "Le nom ne peut pas être vide."
+	}
+	if len(runes) > 15 {
+		return false, fmt.Sprintf("Le nom est trop long (%d caractères). Maximum : 15.", len(runes))
+	}
+
+	// Vérifie que chaque rune est une lettre (lettres latines + accents autorisés)
+	for i, r := range runes {
+		if !unicode.IsLetter(r) {
+			return false, fmt.Sprintf(
+				"Caractère non autorisé '%c' à la position %d : seules les lettres sont autorisées.",
+				r, i+1,
+			)
+		}
+	}
+
+	return true, ""
+}
+
 // Fonction pour créer un personnage personnalisé
 func CreateCharacter() *Character {
 	reader := bufio.NewReader(os.Stdin)
 
-	// Demander le nom
-	fmt.Print("Entrez le nom de votre personnage : ")
-	name, _ := reader.ReadString('\n')
-	name = strings.TrimSpace(name)
-	name = capitalizeFirstLetter(name) // <-- mise en majuscule automatique
+	var name string
+	for {
+		fmt.Print("Entrez le nom de votre personnage : ")
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+
+		if ok, reason := validateName(input); ok {
+			name = capitalizeFirstLetter(input)
+			break
+		} else {
+			fmt.Println("Nom invalide :", reason)
+		}
+	}
 
 	// Choix de la classe
 	classes := []string{"Guerrier", "Mage", "Chasseur"}
@@ -51,8 +85,11 @@ func CreateCharacter() *Character {
 	var classChoice int
 	for {
 		fmt.Print("Entrez le numéro de la classe : ")
-		fmt.Scan(&classChoice)
-		if classChoice >= 1 && classChoice <= len(classes) {
+		line, _ := reader.ReadString('\n')
+		line = strings.TrimSpace(line)
+		n, err := strconv.Atoi(line)
+		if err == nil && n >= 1 && n <= len(classes) {
+			classChoice = n
 			break
 		}
 		fmt.Println("Choix invalide, réessayez.")

@@ -113,8 +113,8 @@ func (w *World) IsWalkableFromConfig(tile rune) bool {
 		}
 	}
 
-	// Par défaut, les tuiles non définies sont praticables
-	return true
+	// Si pas trouvé dans la config, utiliser l'ancien système pour les tuiles communes
+	return isWalkableOld(tile)
 }
 
 // Vérifier si le joueur est caché (sur une tuile avec interaction "hidden")
