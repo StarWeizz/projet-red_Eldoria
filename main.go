@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	"eldoria/game"
+	"eldoria/items"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -112,10 +115,50 @@ func main() {
 				continue
 
 			case '1', '2', '3', '4', '5':
-				itemIndex := int(ev.Rune() - '1')
-				gameState.HandleShopPurchase(itemIndex)
-				gameState.Draw()
-				continue
+				if gameState.LoreMessage == "[CRAFTING]" {
+					// Récupère la liste des craftables
+					craftable := []items.Recipe{}
+					for _, recipe := range items.Recipes {
+						canCraft := true
+						needed := make(map[string]int)
+						for _, item := range recipe.Needs {
+							needed[item]++
+						}
+						for item, qty := range needed {
+							if gameState.PlayerInventory.Items[item] < qty {
+								canCraft = false
+								break
+							}
+						}
+						if canCraft {
+							craftable = append(craftable, recipe)
+						}
+					}
+					idx := int(ev.Rune() - '1')
+					if idx >= 0 && idx < len(craftable) {
+						recipe := craftable[idx]
+						needed := make(map[string]int)
+						for _, item := range recipe.Needs {
+							needed[item]++
+						}
+						for item, qty := range needed {
+							if ref, ok := gameState.PlayerInventory.Refs[item]; ok {
+								gameState.PlayerInventory.Remove(ref, qty)
+							}
+						}
+						if craftItem, ok := items.CraftingItems[recipe.Result]; ok {
+							gameState.PlayerInventory.Add(craftItem, 1)
+							gameState.LoreMessage = "🛠️ Vous avez crafté : " + recipe.Result
+						} else {
+							gameState.LoreMessage = "Recette craftée : " + recipe.Result + " (objet non trouvé dans CraftingItems)"
+						}
+						gameState.Draw()
+					}
+				} else if gameState.LoreMessage != "" && (strings.Contains(gameState.LoreMessage, "Marchand") || strings.Contains(gameState.LoreMessage, "Bienvenue")) {
+					itemIndex := int(ev.Rune() - '1')
+					gameState.HandleShopPurchase(itemIndex)
+					gameState.Draw()
+				}
 
 			case ' ':
 				gameState.HandleSpaceKey()
@@ -125,6 +168,56 @@ func main() {
 				gameState.UnlockPortal()
 				gameState.Draw()
 				continue
+
+			case 'c', 'C':
+				// Affiche le menu de crafting sous la map
+				craftable := []items.Recipe{}
+				for _, recipe := range items.Recipes {
+					canCraft := true
+					needed := make(map[string]int)
+					for _, item := range recipe.Needs {
+						needed[item]++
+					}
+					for item, qty := range needed {
+						if gameState.PlayerInventory.Items[item] < qty {
+							canCraft = false
+							break
+						}
+					}
+					if canCraft {
+						craftable = append(craftable, recipe)
+					}
+				}
+				// Compose le menu
+				menu := "🛠️ Menu de Crafting\n"
+				if len(craftable) == 0 {
+					menu += "Aucune recette craftable avec votre inventaire."
+				} else {
+					menu += "Sélectionnez le numéro de l'objet à crafter :\n"
+					for i, recipe := range craftable {
+						menu += fmt.Sprintf("%d. %s (nécessite: %v)\n", i+1, recipe.Result, recipe.Needs)
+					}
+				}
+				menu += "\nAppuyez sur [1-%d] pour crafter, [i] pour fermer."
+				menu = fmt.Sprintf(menu, len(craftable))
+				// Affiche la map puis le menu en dessous
+				gameState.Draw()
+				screenWidth, _ := screen.Size()
+				lines := strings.Split(menu, "\n")
+				loreY := gameState.WorldList[gameState.CurrentWorld].Height + 3
+				for i, line := range lines {
+					for j, r := range line {
+						if j < screenWidth {
+							screen.SetContent(j, loreY+i, r, nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+						}
+					}
+				}
+				screen.Show()
+				// Attend le choix de l'utilisateur sans bloquer le jeu
+				// On ne bloque pas, on attend juste un chiffre ou 'i' à la prochaine touche
+				// Le joueur peut continuer à jouer, le menu reste affiché jusqu'à la prochaine touche
+				// On utilise une variable pour signaler que le menu est affiché
+				gameState.LoreMessage = "[CRAFTING]"
 
 			case 'a', 'A':
 				// Utiliser une potion de soin si disponible

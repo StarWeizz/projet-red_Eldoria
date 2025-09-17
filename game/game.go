@@ -248,7 +248,7 @@ func (gs *GameState) Draw() {
 	}
 
 	// Dessiner le joueur à sa position
-	gs.Screen.SetContent(w.PlayerX*2, w.PlayerY+1, '😀', nil, tcell.StyleDefault)
+	gs.Screen.SetContent(w.PlayerX*2, w.PlayerY+1, gs.PlayerCharacter.Icon, nil, tcell.StyleDefault)
 	gs.Screen.SetContent(w.PlayerX*2+1, w.PlayerY+1, ' ', nil, tcell.StyleDefault)
 
 	// Bottombar - Afficher les interactions disponibles
@@ -294,7 +294,7 @@ func (gs *GameState) Draw() {
 		}
 	} else {
 		// Afficher les commandes de base
-		defaultText := "Flèches: déplacer • [E]: interagir • [I]: inventaire • [TAB]: changer de monde • [Q]: quitter"
+		defaultText := "Flèches: déplacer • [E]: interagir • [I]: inventaire • [C]: crafting • [P]: débloque portail • [A]: utilise potion • [TAB]: changer de monde • [Q]: quitter"
 		for i, r := range defaultText {
 			if i < screenWidth {
 				gs.Screen.SetContent(i, bottomY, r, nil, tcell.StyleDefault.Foreground(tcell.ColorGray))
