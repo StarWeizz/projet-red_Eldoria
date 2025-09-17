@@ -41,6 +41,7 @@ func (inv *Inventory) List() {
 		fmt.Printf("%s x%d - %s\n", name, qty, inv.Refs[name].GetDescription())
 	}
 }
+<<<<<<< HEAD
 
 // GetInventoryString retourne le contenu de l'inventaire sous forme de string
 func (inv *Inventory) GetInventoryString() string {
@@ -63,3 +64,5 @@ func (inv *Inventory) HasItem(itemName string, minQty int) bool {
 	}
 	return false
 }
+=======
+>>>>>>> f8fb55b (Refactoring files)

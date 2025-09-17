@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+package player
+>>>>>>> f8fb55b (Refactoring files)
 package createcharacter
 
 import (
@@ -6,13 +10,18 @@ import (
 	money "eldoria/money"
 	"fmt"
 	"os"
+<<<<<<< HEAD
 	"strconv"
 	"strings"
 	"unicode"
+=======
+	"strings"
+>>>>>>> f8fb55b (Refactoring files)
 )
 
 // Structure Character
 type Character struct {
+<<<<<<< HEAD
 	Name       string
 	Class      string
 	Level      int
@@ -56,12 +65,22 @@ func validateName(name string) (bool, string) {
 	}
 
 	return true, ""
+=======
+	Name      string
+	Class     string
+	Level     int
+	MaxHP     int
+	CurrentHP int
+	Gold      money.Money
+	Inventory *inventory.Inventory
+>>>>>>> f8fb55b (Refactoring files)
 }
 
 // Fonction pour créer un personnage personnalisé
 func CreateCharacter() *Character {
 	reader := bufio.NewReader(os.Stdin)
 
+<<<<<<< HEAD
 	var name string
 	for {
 		fmt.Print("Entrez le nom de votre personnage : ")
@@ -75,6 +94,12 @@ func CreateCharacter() *Character {
 			fmt.Println("Nom invalide :", reason)
 		}
 	}
+=======
+	// Demander le nom
+	fmt.Print("Entrez le nom de votre personnage : ")
+	name, _ := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
+>>>>>>> f8fb55b (Refactoring files)
 
 	// Choix de la classe
 	classes := []string{"Guerrier", "Mage", "Chasseur"}
@@ -86,11 +111,16 @@ func CreateCharacter() *Character {
 	var classChoice int
 	for {
 		fmt.Print("Entrez le numéro de la classe : ")
+<<<<<<< HEAD
 		line, _ := reader.ReadString('\n')
 		line = strings.TrimSpace(line)
 		n, err := strconv.Atoi(line)
 		if err == nil && n >= 1 && n <= len(classes) {
 			classChoice = n
+=======
+		fmt.Scan(&classChoice)
+		if classChoice >= 1 && classChoice <= len(classes) {
+>>>>>>> f8fb55b (Refactoring files)
 			break
 		}
 		fmt.Println("Choix invalide, réessayez.")
@@ -102,7 +132,11 @@ func CreateCharacter() *Character {
 	maxHP := 100
 	switch chosenClass {
 	case "Guerrier":
+<<<<<<< HEAD
 		maxHP = 10
+=======
+		maxHP = 100
+>>>>>>> f8fb55b (Refactoring files)
 	case "Mage":
 		maxHP = 80
 	case "Chasseur":
@@ -110,6 +144,7 @@ func CreateCharacter() *Character {
 	}
 
 	return &Character{
+<<<<<<< HEAD
 		Name:       name,
 		Class:      chosenClass,
 		Level:      1,
@@ -183,3 +218,14 @@ func (c *Character) GetExpProgress() string {
 
 	return fmt.Sprintf("Niveau %d (%d/%d EXP, %d restants)", c.Level, c.Experience, nextLevelExp, expToNext)
 }
+=======
+		Name:      name,
+		Class:     chosenClass,
+		Level:     1,
+		MaxHP:     maxHP,
+		CurrentHP: maxHP,
+		Gold:      *money.NewMoney(100),     // chaque perso démarre avec 100 or
+		Inventory: inventory.NewInventory(), // inventaire vide au départ
+	}
+}
+>>>>>>> f8fb55b (Refactoring files)

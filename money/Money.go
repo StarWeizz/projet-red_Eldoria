@@ -1,4 +1,8 @@
 package money
+<<<<<<< HEAD
+=======
+package money
+>>>>>>> f8fb55b (Refactoring files)
 
 type Money struct {
 	Amount int
@@ -22,4 +26,8 @@ func (m *Money) Remove(amount int) bool {
 
 func (m *Money) Get() int {
 	return m.Amount
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> f8fb55b (Refactoring files)

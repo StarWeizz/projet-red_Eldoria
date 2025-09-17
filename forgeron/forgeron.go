@@ -1,4 +1,8 @@
 package forgeron
+<<<<<<< HEAD
+=======
+package forgeron
+>>>>>>> f8fb55b (Refactoring files)
 
 import (
 	"eldoria/items"
@@ -44,4 +48,8 @@ func (b *Blacksmith) Buy(p *createcharacter.Character, weaponName string) {
 	p.Gold.Remove(weapon.GetPrice())
 	p.Inventory.Add(weapon, 1)
 	fmt.Printf("Tu as acheté %s pour %d or.\n", weapon.GetName(), weapon.GetPrice())
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> f8fb55b (Refactoring files)
