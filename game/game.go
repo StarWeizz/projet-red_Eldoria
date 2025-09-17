@@ -19,21 +19,6 @@ import (
 
 // GameState représente l'état du jeu
 type GameState struct {
-<<<<<<< HEAD
-<<<<<<< HEAD
-	Screen              tcell.Screen
-	WorldList           []*worlds.World
-	CurrentWorld        int
-	PlayerCharacter     *createcharacter.Character
-	PlayerMoney         *money.Money
-	PlayerInventory     *inventory.Inventory
-	InteractionManager  *interactions.InteractionManager
-	LoreMessage         string
-	ShowingInventory    bool
-	PortalUnlocked      bool
-=======
-=======
->>>>>>> antonin
 	Screen             tcell.Screen
 	WorldList          []*worlds.World
 	CurrentWorld       int
@@ -43,12 +28,8 @@ type GameState struct {
 	InteractionManager *interactions.InteractionManager
 	LoreMessage        string
 	ShowingInventory   bool
-<<<<<<< HEAD
->>>>>>> origin/Mael2
-=======
 	PortalUnlocked     bool
 	Ended              bool
->>>>>>> antonin
 }
 
 // NewGameState crée un nouvel état de jeu
@@ -343,7 +324,6 @@ func (gs *GameState) StartRespawnChecker() *time.Ticker {
 
 	return respawnTicker
 }
-<<<<<<< HEAD
 
 // UnlockPortal débloque l'accès au portail
 func (gs *GameState) UnlockPortal() {
@@ -401,10 +381,6 @@ func abs(x int) int {
 	}
 	return x
 }
-<<<<<<< HEAD
-=======
->>>>>>> origin/Mael2
-=======
 
 // --- Fin du jeu ---
 func (gs *GameState) EndGame() {
@@ -430,4 +406,3 @@ func (gs *GameState) EndGame() {
 		}
 	}
 }
->>>>>>> antonin

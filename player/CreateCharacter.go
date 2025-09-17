@@ -102,15 +102,7 @@ func CreateCharacter() *Character {
 	maxHP := 100
 	switch chosenClass {
 	case "Guerrier":
-<<<<<<< HEAD
-<<<<<<< HEAD
-		maxHP = 10
-=======
 		maxHP = 100
->>>>>>> f8fb55b (Refactoring files)
-=======
-		maxHP = 500
->>>>>>> origin/Mael2
 	case "Mage":
 		maxHP = 80
 	case "Chasseur":
@@ -118,7 +110,6 @@ func CreateCharacter() *Character {
 	}
 
 	return &Character{
-<<<<<<< HEAD
 		Name:       name,
 		Class:      chosenClass,
 		Level:      1,
@@ -192,19 +183,6 @@ func (c *Character) GetExpProgress() string {
 
 	return fmt.Sprintf("Niveau %d (%d/%d EXP, %d restants)", c.Level, c.Experience, nextLevelExp, expToNext)
 }
-<<<<<<< HEAD
-=======
-		Name:      name,
-		Class:     chosenClass,
-		Level:     1,
-		MaxHP:     maxHP,
-		CurrentHP: maxHP,
-		Gold:      *money.NewMoney(100),     // chaque perso démarre avec 100 or
-		Inventory: inventory.NewInventory(), // inventaire vide au départ
-	}
-}
->>>>>>> f8fb55b (Refactoring files)
-=======
 
 // GetAttack retourne la valeur d'attaque basée sur la classe et le niveau
 func (c *Character) GetAttack() int {
@@ -233,4 +211,3 @@ func (c *Character) GetDefense() int {
 	}
 	return baseDefense + (c.Level - 1) // +1 défense par niveau
 }
->>>>>>> antonin

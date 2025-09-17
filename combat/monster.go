@@ -7,16 +7,12 @@ import (
 	"time"
 )
 
-<<<<<<< HEAD
-// Monster déjà défini
-=======
 type Boss struct {
 	Monster
 	SpecialCooldown int // compteur pour attaque spéciale
 }
 
 // Structure Monster
->>>>>>> antonin
 type Monster struct {
 	Name    string
 	HP      int
@@ -24,27 +20,23 @@ type Monster struct {
 	Defense int
 }
 
+// Vérifie si le monstre est encore vivant
 func (m *Monster) IsAlive() bool {
 	return m.HP > 0
 }
 
-func (m *Monster) TakeDamage(dmg int) {
-	m.HP -= dmg
+// Inflige des dégâts au monstre et retourne la valeur infligée
+func (m *Monster) TakeDamage(damage int) int {
+	if damage < 0 {
+		damage = 0
+	}
+	m.HP -= damage
 	if m.HP < 0 {
 		m.HP = 0
 	}
+	return damage
 }
 
-<<<<<<< HEAD
-// NewRandomMonster crée un monstre aléatoire
-func NewRandomMonster() *Monster {
-	rand.Seed(time.Now().UnixNano())
-
-	monsters := []*Monster{
-		{Name: "Gobelin", HP: 20, Attack: 5, Defense: 2},
-		{Name: "Loup", HP: 15, Attack: 7, Defense: 1},
-		{Name: "Troll", HP: 30, Attack: 8, Defense: 3},
-=======
 // Crée le Boss Maximor
 func NewMaximor() *Boss {
 	return &Boss{
@@ -55,10 +47,7 @@ func NewMaximor() *Boss {
 			Defense: 3,
 		},
 		SpecialCooldown: 0,
->>>>>>> antonin
 	}
-
-	return monsters[rand.Intn(len(monsters))]
 }
 
 func (b *Boss) AttackHero(h *createcharacter.Character) int {

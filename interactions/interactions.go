@@ -34,7 +34,7 @@ type InteractionManager struct {
 }
 
 func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *InteractionManager {
-	// Créer les objets de la boutique automatiquement
+	// Créer les objets de la boutique automatiquement à partir de tous les CraftingItems
 	var shopItems []ShopItem
 	// Ajout Heal potion depuis PotionsList
 	if healPotion, exists := items.PotionsList["Heal potion"]; exists {
@@ -73,7 +73,6 @@ type InteractionResult struct {
 	EndGame      bool
 }
 
-// --- Gestion des interactions ---
 func (im *InteractionManager) HandleInteraction(world *worlds.World, player *createcharacter.Character, x, y int, interactionType string) *InteractionResult {
 	switch interactionType {
 	case "pickup":
@@ -144,8 +143,10 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 
 func (im *InteractionManager) handlePickup(world *worlds.World, player *createcharacter.Character, x, y int) *InteractionResult {
 	objectType := world.GetObjectTypeAt(x, y)
+
 	switch objectType {
 	case "rock":
+		// Créer un item pierre depuis la map des CraftingItems
 		if stoneItem, exists := items.CraftingItems["Pierre"]; exists {
 			im.inventory.Add(stoneItem, 1)
 
@@ -163,6 +164,7 @@ func (im *InteractionManager) handlePickup(world *worlds.World, player *createch
 				RespawnTime: time.Now().Add(10 * time.Second),
 				ObjectType:  "rock",
 			}
+
 			return &InteractionResult{
 				Success:      true,
 				Message:      message,
@@ -171,31 +173,51 @@ func (im *InteractionManager) handlePickup(world *worlds.World, player *createch
 				RespawnTime:  10 * time.Second,
 			}
 		}
-		return &InteractionResult{Success: false, Message: "Erreur lors de la récupération de l'item."}
+
+		return &InteractionResult{
+			Success: false,
+			Message: "Erreur lors de la récupération de l'item.",
+		}
+
 	default:
-		return &InteractionResult{Success: false, Message: "Rien à ramasser ici."}
+		return &InteractionResult{
+			Success: false,
+			Message: "Rien à ramasser ici.",
+		}
 	}
 }
 
-// --- Autres handlers ---
 func (im *InteractionManager) handleChest(world *worlds.World, x, y int) *InteractionResult {
-	return &InteractionResult{Success: true, Message: "🎁 Coffre ouvert ! Vous avez trouvé une récompense."}
+	return &InteractionResult{
+		Success: true,
+		Message: "🎁 Coffre ouvert ! Vous avez trouvé une récompense.",
+	}
 }
 
 func (im *InteractionManager) handleDoor(world *worlds.World, x, y int) *InteractionResult {
+	// Messages de lore pour différentes portes selon leur position
 	loreMessages := []string{
-		"🚪 Vous entrez dans une demeure chaleureuse.",
-		"🚪 Cette maison semble abandonnée depuis longtemps.",
-		"🚪 Vous pénétrez dans une forge.",
-		"🚪 Une bibliothèque poussiéreuse s'étend devant vous.",
+		"🚪 Vous entrez dans une demeure chaleureuse. Un parfum de soupe flotte dans l'air.",
+		"🚪 Cette maison semble abandonnée depuis longtemps. Des toiles d'araignée ornent les coins.",
+		"🚪 Vous pénétrez dans une forge. Le bruit du marteau résonne encore faiblement.",
+		"🚪 Une bibliothèque poussiéreuse s'étend devant vous. Des grimoires anciens tapissent les étagères.",
 		"🚪 L'intérieur de cette maison révèle un laboratoire d'alchimie mystérieux.",
 	}
+
+	// Utiliser la position pour déterminer quel message afficher
 	messageIndex := (x + y) % len(loreMessages)
-	return &InteractionResult{Success: true, Message: loreMessages[messageIndex]}
+
+	return &InteractionResult{
+		Success: true,
+		Message: loreMessages[messageIndex],
+	}
 }
 
 func (im *InteractionManager) handleTreasure(world *worlds.World, x, y int) *InteractionResult {
-	return &InteractionResult{Success: true, Message: "💎 Trésor trouvé !"}
+	return &InteractionResult{
+		Success: true,
+		Message: "💎 Trésor trouvé !",
+	}
 }
 
 func (im *InteractionManager) handleMerchant(world *worlds.World, x, y int) *InteractionResult {
@@ -211,26 +233,48 @@ func (im *InteractionManager) handleMerchant(world *worlds.World, x, y int) *Int
 	}
 }
 
+// Nouvelle méthode pour gérer l'achat d'un objet spécifique
 func (im *InteractionManager) BuyItem(itemIndex int) *InteractionResult {
 	if itemIndex < 0 || itemIndex >= len(im.shopItems) {
-		return &InteractionResult{Success: false, Message: "❌ Objet invalide."}
+		return &InteractionResult{
+			Success: false,
+			Message: "❌ Objet invalide.",
+		}
 	}
+
 	shopItem := im.shopItems[itemIndex]
+
+	// Vérifier si le joueur a assez d'argent
 	if im.playerMoney.Get() < shopItem.Price {
-		return &InteractionResult{Success: false, Message: fmt.Sprintf("❌ Pas assez d'argent ! (%d nécessaires, %d disponibles)", shopItem.Price, im.playerMoney.Get())}
+		return &InteractionResult{
+			Success: false,
+			Message: fmt.Sprintf("❌ Pas assez d'argent ! Il vous faut %d 💰 mais vous n'avez que %d 💰.", shopItem.Price, im.playerMoney.Get()),
+		}
 	}
+
+	// Effectuer la transaction
 	if im.playerMoney.Remove(shopItem.Price) {
 		im.inventory.Add(shopItem.Item, 1)
-		return &InteractionResult{Success: true, Message: fmt.Sprintf("✅ Vous avez acheté %s pour %d 💰 !", shopItem.Item.GetName(), shopItem.Price), ItemGained: shopItem.Item}
+		return &InteractionResult{
+			Success:    true,
+			Message:    fmt.Sprintf("✅ Vous avez acheté %s pour %d 💰 ! Il vous reste %d 💰.", shopItem.Item.GetName(), shopItem.Price, im.playerMoney.Get()),
+			ItemGained: shopItem.Item,
+		}
 	}
-	return &InteractionResult{Success: false, Message: "❌ Erreur lors de l'achat."}
+
+	return &InteractionResult{
+		Success: false,
+		Message: "❌ Erreur lors de l'achat.",
+	}
 }
 
 func (im *InteractionManager) handleBlacksmith(world *worlds.World, x, y int) *InteractionResult {
-	return &InteractionResult{Success: true, Message: "⚒️ Forgeron : \"Salut aventurier !\""}
+	return &InteractionResult{
+		Success: true,
+		Message: "⚒️ Forgeron : \"Salut aventurier ! Je peux forger des armes et armures pour toi. Tu as des matériaux à transformer ?\"",
+	}
 }
 
-<<<<<<< HEAD
 func (im *InteractionManager) handleEmeryn(player *createcharacter.Character) *InteractionResult {
 	// Utiliser le nouveau système de messages d'Emeryn
 	message := im.emeryn.GetEmerynMessage(player)
@@ -262,6 +306,7 @@ func (im *InteractionManager) GetEmerynQuests() []npcs.Quest {
 	return im.emeryn.Quests
 }
 
+// --- Respawn ---
 func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 	var messages []string
 	now := time.Now()
@@ -270,8 +315,6 @@ func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 		if now.After(data.RespawnTime) {
 			parts := strings.Split(respawnKey, "|")
 			if len(parts) != 3 {
-				messages = append(messages, fmt.Sprintf("❌ Format respawn invalide: %s", respawnKey))
-
 				delete(im.respawnQueue, respawnKey)
 				continue
 			}
@@ -279,24 +322,6 @@ func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 			x, _ := strconv.Atoi(parts[0])
 			y, _ := strconv.Atoi(parts[1])
 			worldName := parts[2]
-			if err1 != nil || err2 != nil {
-				messages = append(messages, fmt.Sprintf("❌ Erreur conversion coords: %s", respawnKey))
-				delete(im.respawnQueue, respawnKey)
-				continue
-			}
-
-			if worldName == world.Name {
-				err := world.RespawnObject(x, y, data.ObjectType)
-				if err != nil {
-					messages = append(messages, fmt.Sprintf("❌ Erreur respawn du rocher: %v", err))
-
-					messages = append(messages, fmt.Sprintf("❌ Erreur respawn: %v", err))
-				} else {
-					if data.ObjectType == "rock" {
-						messages = append(messages, fmt.Sprintf("🪨 Un rocher a réapparu en (%d, %d)", x, y))
-					} else if data.ObjectType == "monster" {
-						messages = append(messages, fmt.Sprintf("👹 Un monstre a réapparu en (%d, %d)", x, y))
-					}
 
 			if worldName == world.Name {
 				_ = world.RespawnObject(x, y, data.ObjectType)
@@ -312,9 +337,11 @@ func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 	return messages
 }
 
-// --- Interactions proches ---
+// Méthode pour vérifier si le joueur peut interagir avec un objet adjacent
 func (im *InteractionManager) CheckNearbyInteractions(world *worlds.World) []string {
-	var available []string
+	var availableInteractions []string
+
+	// Vérifier les 4 directions autour du joueur
 	coords := [][2]int{
 		{world.PlayerX + 1, world.PlayerY},
 		{world.PlayerX - 1, world.PlayerY},
@@ -325,21 +352,14 @@ func (im *InteractionManager) CheckNearbyInteractions(world *worlds.World) []str
 	for _, coord := range coords {
 		x, y := coord[0], coord[1]
 		if x >= 0 && x < world.Width && y >= 0 && y < world.Height {
-<<<<<<< HEAD
 			interactionType := world.GetInteractionType(x, y)
 			if interactionType != "none" && interactionType != "" && interactionType != "door" {
 				objectName := world.GetObjectNameAt(x, y)
 				availableInteractions = append(availableInteractions,
 					fmt.Sprintf("Appuyez sur [E] près de %s pour %s", objectName, interactionType))
-=======
-			it := world.GetInteractionType(x, y)
-			if it != "none" && it != "" {
-				name := world.GetObjectNameAt(x, y)
-				available = append(available, fmt.Sprintf("Appuyez sur [E] près de %s pour %s", name, it))
->>>>>>> origin/Mael2
 			}
 		}
 	}
 
-	return available
+	return availableInteractions
 }

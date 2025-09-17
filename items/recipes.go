@@ -5,6 +5,7 @@ type Recipe struct {
 	Needs  []string
 }
 
+
 var Recipes = []Recipe{
 	{
 		Result: "Lame rouillé",
