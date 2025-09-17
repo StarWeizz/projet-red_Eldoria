@@ -66,6 +66,12 @@
 			"name": "Portail",
 			"walkable": true,
 			"interaction": "portal"
+		},
+		"stick": {
+			"symbol": "🪵",
+			"name": "Bâton",
+			"walkable": false,
+			"interaction": "pickup"
 		}
 	},
 	"objects": [
@@ -882,17 +888,23 @@
 		{ "x": 41, "y": 24, "object": "emeryn" },
 		{ "x": 41, "y": 2, "object": "portal" },
 
-		{"x": 16, "y": 28, "object": "monster"},
-		{"x": 8, "y": 12, "object": "monster"},
-		{"x": 22, "y": 16, "object": "monster"},
-		{"x": 24, "y": 20, "object": "monster"},
-		{"x": 53, "y": 17, "object": "monster"},
-		{"x": 72, "y": 26, "object": "monster"},
-		{"x": 61, "y": 32, "object": "monster"},
-		{"x": 36, "y": 32, "object": "monster"},
-		{"x": 75, "y": 14, "object": "monster"},
-		{"x": 4, "y": 11, "object": "monster"},
-		{"x": 3, "y": 30, "object": "monster"},
-		{"x": 41, "y": 24, "object": "monster"}
+		{ "x": 16, "y": 28, "object": "monster" },
+		{ "x": 8, "y": 12, "object": "monster" },
+		{ "x": 22, "y": 16, "object": "monster" },
+		{ "x": 24, "y": 20, "object": "monster" },
+		{ "x": 53, "y": 17, "object": "monster" },
+		{ "x": 72, "y": 26, "object": "monster" },
+		{ "x": 61, "y": 32, "object": "monster" },
+		{ "x": 36, "y": 32, "object": "monster" },
+		{ "x": 75, "y": 14, "object": "monster" },
+		{ "x": 4, "y": 11, "object": "monster" },
+		{ "x": 3, "y": 30, "object": "monster" },
+		{ "x": 41, "y": 24, "object": "monster" },
+		{ "x": 12, "y": 15, "object": "stick" },
+		{ "x": 63, "y": 18, "object": "stick" },
+		{ "x": 66, "y": 26, "object": "stick" },
+		{ "x": 20, "y": 18, "object": "stick" },
+		{ "x": 25, "y": 22, "object": "stick" },
+		{ "x": 30, "y": 25, "object": "stick" }
 	]
 }

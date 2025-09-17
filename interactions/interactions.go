@@ -220,6 +220,39 @@ func (im *InteractionManager) handlePickup(world *worlds.World, player *createch
 			Message: "Erreur lors de la récupération de l'item.",
 		}
 
+	case "stick":
+		// Créer un item bâton depuis la map des CraftingItems
+		if stickItem, exists := items.CraftingItems["Bâton"]; exists {
+			im.inventory.Add(stickItem, 1)
+
+			// Donner de l'EXP pour la récolte
+			expMessage := player.AddExperience(1)
+			message := "🪵 Bâton ramassé !"
+			if expMessage != "" {
+				message += "\n" + expMessage
+			}
+
+			// Planifier le respawn du bâton dans 15 secondes
+			respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
+			im.respawnQueue[respawnKey] = RespawnData{
+				RespawnTime: time.Now().Add(15 * time.Second),
+				ObjectType:  "stick",
+			}
+
+			return &InteractionResult{
+				Success:      true,
+				Message:      message,
+				ItemGained:   stickItem,
+				ShouldRemove: true,
+				RespawnTime:  15 * time.Second,
+			}
+		}
+
+		return &InteractionResult{
+			Success: false,
+			Message: "Erreur lors de la récupération de l'item.",
+		}
+
 	default:
 		return &InteractionResult{
 			Success: false,
@@ -377,6 +410,8 @@ func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 					messages = append(messages, fmt.Sprintf("🪨 Un rocher a réapparu en (%d, %d)", x, y))
 				} else if data.ObjectType == "monster" {
 					messages = append(messages, fmt.Sprintf("👹 Un monstre a réapparu en (%d, %d)", x, y))
+				} else if data.ObjectType == "stick" {
+					messages = append(messages, fmt.Sprintf("🪵 Un bâton a réapparu en (%d, %d)", x, y))
 				}
 			}
 			delete(im.respawnQueue, respawnKey)

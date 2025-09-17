@@ -1,6 +1,10 @@
 package worlds
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/gdamore/tcell/v2"
+)
 
 type World struct {
 	Name          string
@@ -10,6 +14,7 @@ type World struct {
 	PlayerY       int
 	Config        *WorldConfig // Configuration du monde pour les interactions
 	OriginalTile  rune         // Sauvegarde de la tuile originale sous le joueur
+	Sticks        []Stick      // Liste des bâtons dans le monde
 }
 
 // Fonction pour créer une grille simple avec bordure
@@ -37,6 +42,7 @@ func NewGrid(name string, width, height int, specialX, specialY int) *World {
 		PlayerY:      1,
 		Config:       nil, // Pas de configuration pour les mondes créés à l'ancienne
 		OriginalTile: '🟫', // Tuile par défaut
+		Sticks:       []Stick{},
 	}
 }
 
@@ -138,6 +144,30 @@ func (w *World) RemoveObject(x, y int) {
 					break
 				}
 			}
+		}
+	}
+}
+
+// Stick représente un bâton dans le monde
+// Il contient des informations sur sa disponibilité et sa position
+type Stick struct {
+	X, Y        int  // Position du bâton
+	IsAvailable bool // Indique si le bâton est disponible pour interaction
+}
+
+// InitializeSticks initialise les bâtons dans le monde
+func (w *World) InitializeSticks() {
+	w.Sticks = []Stick{
+		{X: 5, Y: 10, IsAvailable: true},
+		{X: 15, Y: 20, IsAvailable: true},
+	}
+}
+
+// DrawSticks dessine les bâtons disponibles sur la carte
+func (w *World) DrawSticks(screen tcell.Screen) {
+	for _, stick := range w.Sticks {
+		if stick.IsAvailable {
+			screen.SetContent(stick.X, stick.Y, '⚪', nil, tcell.StyleDefault.Foreground(tcell.ColorGreen))
 		}
 	}
 }
