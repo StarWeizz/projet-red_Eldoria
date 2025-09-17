@@ -45,12 +45,12 @@ func main() {
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
-			// Gestion des touches spéciales
-			if ev.Key() == tcell.KeyTab {
-				gameState.SwitchWorld()
-				gameState.Draw()
-				continue
-			}
+			// Gestion des touches spéciales - Tab désactivé
+			// if ev.Key() == tcell.KeyTab {
+			//	gameState.SwitchWorld()
+			//	gameState.Draw()
+			//	continue
+			// }
 
 			// Gestion des touches par caractère
 			switch ev.Rune() {
@@ -83,6 +83,11 @@ func main() {
 
 			case ' ':
 				gameState.HandleSpaceKey()
+				continue
+
+			case 'p', 'P':
+				gameState.UnlockPortal()
+				gameState.Draw()
 				continue
 			}
 

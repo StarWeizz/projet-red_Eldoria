@@ -55,12 +55,18 @@
 			"walkable": false,
 			"interaction": "emeryn"
 		},
-    "monster": {
-      "symbol": "👹",
-      "name": "monster",
-      "walkable": true,
-      "interaction": "monster"
-    }
+		"monster": {
+			"symbol": "👹",
+			"name": "monster",
+			"walkable": true,
+			"interaction": "monster"
+		},
+		"portal": {
+			"symbol": "🌀",
+			"name": "Portail",
+			"walkable": true,
+			"interaction": "portal"
+		}
 	},
 	"objects": [
 		{ "x": 5, "y": 5, "object": "tree" },
@@ -76,9 +82,6 @@
 		{ "x": 48, "y": 22, "object": "rock" },
 		{ "x": 73, "y": 30, "object": "rock" },
 
-		{ "x": 60, "y": 15, "object": "tree" },
-		{ "x": 61, "y": 15, "object": "tree" },
-		{ "x": 62, "y": 15, "object": "tree" },
 		{ "x": 1, "y": 1, "object": "tree" },
 		{ "x": 2, "y": 1, "object": "tree" },
 		{ "x": 3, "y": 1, "object": "tree" },
@@ -97,6 +100,19 @@
 		{ "x": 22, "y": 6, "object": "house_floor" },
 		{ "x": 23, "y": 6, "object": "house_floor" },
 		{ "x": 24, "y": 6, "object": "house_floor" },
+
+		{ "x": 46, "y": 16, "object": "house_floor" },
+		{ "x": 66, "y": 19, "object": "house_floor" },
+		{ "x": 66, "y": 20, "object": "house_floor" },
+		{ "x": 15, "y": 21, "object": "house_floor" },
+		{ "x": 11, "y": 29, "object": "house_floor" },
+		{ "x": 11, "y": 30, "object": "house_floor" },
+		{ "x": 21, "y": 31, "object": "house_floor" },
+		{ "x": 41, "y": 29, "object": "house_floor" },
+		{ "x": 41, "y": 30, "object": "house_floor" },
+		{ "x": 41, "y": 31, "object": "house_floor" },
+		{ "x": 41, "y": 32, "object": "house_floor" },
+
 		{ "x": 25, "y": 6, "object": "house_floor" },
 		{ "x": 26, "y": 6, "object": "house_wall" },
 
@@ -115,14 +131,6 @@
 		{ "x": 24, "y": 8, "object": "house_floor" },
 		{ "x": 25, "y": 8, "object": "house_floor" },
 		{ "x": 26, "y": 8, "object": "house_wall" },
-
-		{ "x": 20, "y": 9, "object": "house_wall" },
-		{ "x": 21, "y": 9, "object": "house_wall" },
-		{ "x": 22, "y": 9, "object": "house_wall" },
-		{ "x": 23, "y": 9, "object": "house_wall" },
-		{ "x": 24, "y": 9, "object": "house_wall" },
-		{ "x": 25, "y": 9, "object": "house_wall" },
-		{ "x": 26, "y": 9, "object": "house_wall" },
 		{ "x": 5, "y": 1, "object": "tree" },
 		{ "x": 6, "y": 1, "object": "tree" },
 		{ "x": 7, "y": 1, "object": "tree" },
@@ -863,9 +871,10 @@
 		{ "x": 41, "y": 28, "object": "house_wall" },
 		{ "x": 41, "y": 33, "object": "house_wall" },
 
-		{ "x": 15, "y": 15, "object": "merchant" },
-		{ "x": 35, "y": 10, "object": "blacksmith" },
+		{ "x": 71, "y": 10, "object": "merchant" },
+		{ "x": 33, "y": 29, "object": "blacksmith" },
 		{ "x": 41, "y": 24, "object": "emeryn" },
-    { "x": 25, "y": 33, "object": "monster"}
+    	{ "x": 25, "y": 33, "object": "monster"},
+		{ "x": 10, "y": 10, "object": "portal" }
 	]
 }

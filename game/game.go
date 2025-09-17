@@ -26,6 +26,7 @@ type GameState struct {
 	InteractionManager  *interactions.InteractionManager
 	LoreMessage         string
 	ShowingInventory    bool
+	PortalUnlocked      bool
 }
 
 // NewGameState crée un nouvel état de jeu
