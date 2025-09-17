@@ -89,6 +89,8 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 		return im.handleBlacksmith(world, x, y)
 	case "emeryn":
 		return im.handleEmeryn(player)
+	case "portal":
+		return im.handlePortal(world, x, y)
 	case "boss":
 		boss := combat.NewMaximor()
 		win := combat.StartCombat(player, &boss.Monster)
@@ -123,6 +125,12 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 
 			expMessage := player.AddExperience(expGained)
 
+			// Vérifier si c'est un Azador et si le joueur est à l'étape de quête appropriée
+			questMessage := ""
+			if strings.Contains(monster.Name, "Azador") {
+				questMessage = im.checkAzadorKillQuest(player)
+			}
+
 			if dropItem, exists := items.CraftingItems["Ecaille d'Azador"]; exists {
 				im.inventory.Add(dropItem, 1)
 				respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
@@ -134,6 +142,9 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 				message := fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s !", monster.Name, dropItem.GetName())
 				if expMessage != "" {
 					message += "\n" + expMessage
+				}
+				if questMessage != "" {
+					message += "\n" + questMessage
 				}
 
 				return &InteractionResult{
@@ -148,6 +159,9 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 			message := fmt.Sprintf("🏆 Vous avez vaincu %s !", monster.Name)
 			if expMessage != "" {
 				message += "\n" + expMessage
+			}
+			if questMessage != "" {
+				message += "\n" + questMessage
 			}
 
 			return &InteractionResult{
@@ -312,6 +326,13 @@ func (im *InteractionManager) handleEmeryn(player *createcharacter.Character) *I
 	}
 }
 
+func (im *InteractionManager) handlePortal(world *worlds.World, x, y int) *InteractionResult {
+	return &InteractionResult{
+		Success: true,
+		Message: "🌀 Portail mystérieux vers Eldoria. Appuyez sur [P] pour le déverrouiller ou utilisez [TAB] si déjà débloqué.",
+	}
+}
+
 // AdvanceEmerynInteraction fait avancer l'interaction avec Emeryn (appelé lors de l'appui sur espace)
 func (im *InteractionManager) AdvanceEmerynInteraction() {
 	im.emeryn.AdvanceEmerynPhase()
@@ -389,4 +410,28 @@ func (im *InteractionManager) CheckNearbyInteractions(world *worlds.World) []str
 	}
 
 	return availableInteractions
+}
+
+// checkAzadorKillQuest vérifie si tuer un Azador fait progresser la quête d'intro
+func (im *InteractionManager) checkAzadorKillQuest(player *createcharacter.Character) string {
+	if im.emeryn == nil {
+		return ""
+	}
+
+	// Vérifier la quête d'introduction d'Emeryn
+	for _, quest := range im.emeryn.Quests {
+		if quest.ID == "intro_quest" && !quest.Completed {
+			// Vérifier si on est à l'étape 1 (CurrentStep = 1, car 0-indexé)
+			// L'étape 1 correspond à "Tuer votre premier Azador"
+			if quest.CurrentStep == 1 {
+				// Valider l'étape de la quête directement via Emeryn
+				if im.emeryn.ValidateQuestStep(player, "intro_quest") {
+					return "✨ Quête mise à jour : Trouvez maintenant Valenric le forgeron !"
+				}
+			}
+			break
+		}
+	}
+
+	return ""
 }

@@ -41,10 +41,10 @@ func CreateEmeryn() *NPC {
 				Title:       "Tuer votre premier Azador",
 				Description: "Combattez un Azador et récoltez de la pierre et des bâtons.",
 				Condition: func(player *createcharacter.Character) bool {
-					// Vérifier si le joueur a de la pierre et des bâtons dans son inventaire
-					hasStone := player.Inventory.HasItem("Pierre", 1)
-					hasStick := player.Inventory.HasItem("Bâton", 1)
-					return hasStone && hasStick
+					// Pour cette quête spéciale, on vérifie qu'un Azador a été tué
+					// Cette condition sera validée manuellement dans checkAzadorKillQuest
+					// Pour l'instant, on retourne true si appelé depuis ValidateQuestStep
+					return true
 				},
 				Reward: QuestReward{
 					Money: 100,
