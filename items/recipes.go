@@ -5,16 +5,6 @@ type Recipe struct {
 	Needs  []string
 }
 
-<<<<<<< HEAD
-=======
-func (c CraftingItem) GetName() string {
-	return c.Name
-}
-func (c CraftingItem) GetDescription() string {
-	return c.Description
-}
->>>>>>> f8fb55b (Refactoring files)
-
 var Recipes = []Recipe{
 	{
 		Result: "Lame rouillé",

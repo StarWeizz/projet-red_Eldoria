@@ -1,8 +1,4 @@
 package marchant
-<<<<<<< HEAD
-=======
-package marchant
->>>>>>> f8fb55b (Refactoring files)
 
 import (
 	items "eldoria/items"
@@ -32,20 +28,9 @@ func NewMerchant(name string) *Merchant {
 
 func (m *Merchant) ShowStock() {
 	fmt.Printf("=== Boutique de %s ===\n", m.Name)
-<<<<<<< HEAD
-	fmt.Println("Articles disponibles :")
-
-	i := 1
-	for _, it := range m.Stock {
-		fmt.Printf("%d. %s - %d or\n", i, it.GetName(), it.GetPrice())
-		i++
-	}
-	fmt.Println()
-=======
 	for _, it := range m.Stock {
 		fmt.Printf("- %s : %d or\n", it.GetName(), it.GetPrice())
 	}
->>>>>>> f8fb55b (Refactoring files)
 }
 
 func (m *Merchant) Buy(p *createcharacter.Character, itemName string) {
@@ -63,8 +48,4 @@ func (m *Merchant) Buy(p *createcharacter.Character, itemName string) {
 	p.Gold.Remove(it.GetPrice())
 	p.Inventory.Add(it, 1)
 	fmt.Printf("Achat réussi : %s ajouté à ton inventaire !\n", itemName)
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> f8fb55b (Refactoring files)

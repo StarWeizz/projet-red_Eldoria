@@ -86,14 +86,9 @@ func main() {
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
-<<<<<<< HEAD
-			// Gestion des touches spéciales - Tab avec vérification du portail
-			if ev.Key() == tcell.KeyTab {
-=======
 			// Gestion des touches spéciales
 			switch ev.Key() {
 			case tcell.KeyTab:
->>>>>>> origin/Mael2
 				gameState.SwitchWorld()
 				gameState.Draw()
 				continue
@@ -108,21 +103,6 @@ func main() {
 			// Gestion des touches par caractère
 			switch ev.Rune() {
 			case 'q', 'Q':
-<<<<<<< HEAD
-				// Restaurer le terminal proprement
-				screen.Fini()
-
-				// Restaurer complètement le terminal avec reset
-				cmd := exec.Command("reset")
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-				cmd.Run()
-
-				return
-			case 'e', 'E':
-				gameState.HandleInteractionKey()
-				gameState.Draw()
-=======
 				handleQuit(screen)
 
 			case 'e', 'E':
@@ -133,7 +113,6 @@ func main() {
 				}
 				continue
 
->>>>>>> antonin
 			case 'i', 'I':
 				gameState.ToggleInventory()
 				gameState.Draw()
@@ -141,7 +120,6 @@ func main() {
 				itemIndex := int(ev.Rune() - '1')
 				gameState.HandleShopPurchase(itemIndex)
 				gameState.Draw()
-<<<<<<< HEAD
 				continue
 
 			case ' ':
@@ -186,8 +164,6 @@ func main() {
 					gameState.Draw()
 					gameState.CheckInteraction()
 				}
-=======
->>>>>>> origin/Mael2
 			}
 
 		case *tcell.EventResize:
