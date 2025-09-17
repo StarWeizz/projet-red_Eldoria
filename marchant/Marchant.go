@@ -28,9 +28,14 @@ func NewMerchant(name string) *Merchant {
 
 func (m *Merchant) ShowStock() {
 	fmt.Printf("=== Boutique de %s ===\n", m.Name)
+	fmt.Println("Articles disponibles :")
+
+	i := 1
 	for _, it := range m.Stock {
-		fmt.Printf("- %s : %d or\n", it.GetName(), it.GetPrice())
+		fmt.Printf("%d. %s - %d or\n", i, it.GetName(), it.GetPrice())
+		i++
 	}
+	fmt.Println()
 }
 
 func (m *Merchant) Buy(p *createcharacter.Character, itemName string) {

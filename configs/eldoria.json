@@ -37,9 +37,9 @@
       "walkable": true,
       "interaction": "armor"
     },
-    "dragon": {
-      "symbol": "🐉",
-      "name": "Dragon",
+    "Maximor": {
+      "symbol": "💀",
+      "name": "Maximor",
       "walkable": false,
       "interaction": "boss"
     },
@@ -62,7 +62,7 @@
     {"x": 8, "y": 8, "object": "mushroom"},
     {"x": 15, "y": 6, "object": "sword"},
     {"x": 25, "y": 8, "object": "shield"},
-    {"x": 35, "y": 20, "object": "dragon"},
+    {"x": 35, "y": 20, "object": "Maximor"},
     {"x": 34, "y": 20, "object": "fire"},
     {"x": 36, "y": 20, "object": "fire"},
     {"x": 10, "y": 15, "object": "potion"},

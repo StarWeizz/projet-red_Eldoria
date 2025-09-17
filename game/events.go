@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -33,6 +34,13 @@ func (gs *GameState) CheckInteraction() {
 
 // HandleInteractionKey gère l'interaction avec la touche E
 func (gs *GameState) HandleInteractionKey() {
+	// Vérifier d'abord si le joueur est près du portail pour la téléportation
+	if gs.CheckPortalProximity() {
+		gs.TeleportToEldoria()
+		gs.Draw()
+		return
+	}
+
 	w := gs.WorldList[gs.CurrentWorld]
 	coords := [][2]int{
 		{w.PlayerX + 1, w.PlayerY},
@@ -56,6 +64,12 @@ func (gs *GameState) HandleInteractionKey() {
 					w.RemoveObject(x, y)
 				}
 
+				// Vérifier si le jeu doit se terminer (victoire contre le boss)
+				if result.EndGame {
+					gs.EndGame()
+					return
+				}
+
 				// Redessiner immédiatement pour afficher le message
 				gs.Draw()
 				return // Sortir après la première interaction trouvée
@@ -64,8 +78,13 @@ func (gs *GameState) HandleInteractionKey() {
 	}
 }
 
-// SwitchWorld change de monde (TAB)
+// SwitchWorld change de monde (TAB) - seulement si le portail est débloqué
 func (gs *GameState) SwitchWorld() {
+	if !gs.PortalUnlocked {
+		gs.LoreMessage = "❌ Le portail est verrouillé ! Vous devez d'abord débloquer l'accès au portail."
+		return
+	}
+
 	// restaurer la tuile originale dans le monde courant
 	gs.WorldList[gs.CurrentWorld].Grid[gs.WorldList[gs.CurrentWorld].PlayerY][gs.WorldList[gs.CurrentWorld].PlayerX] = gs.WorldList[gs.CurrentWorld].OriginalTile
 
@@ -75,6 +94,8 @@ func (gs *GameState) SwitchWorld() {
 
 	// afficher le joueur à sa position sauvegardée
 	world.Grid[world.PlayerY][world.PlayerX] = '😀'
+
+	gs.LoreMessage = fmt.Sprintf("🌍 Téléportation vers %s réussie !", world.Name)
 }
 
 // ToggleInventory bascule l'affichage de l'inventaire
@@ -99,6 +120,44 @@ func (gs *GameState) HandleShopPurchase(itemIndex int) {
 			if interactionType == "merchant" {
 				result := gs.InteractionManager.BuyItem(itemIndex)
 				gs.LoreMessage = result.Message
+				return
+			}
+		}
+	}
+}
+
+// HandleSpaceKey gère l'appui sur la barre d'espace (pour Emeryn)
+func (gs *GameState) HandleSpaceKey() {
+	w := gs.WorldList[gs.CurrentWorld]
+	coords := [][2]int{
+		{w.PlayerX + 1, w.PlayerY},
+		{w.PlayerX - 1, w.PlayerY},
+		{w.PlayerX, w.PlayerY + 1},
+		{w.PlayerX, w.PlayerY - 1},
+	}
+
+	for _, coord := range coords {
+		x, y := coord[0], coord[1]
+		if x >= 0 && x < w.Width && y >= 0 && y < w.Height {
+			interactionType := w.GetInteractionType(x, y)
+			if interactionType == "emeryn" {
+				// Vérifier si on peut faire avancer l'interaction
+				if gs.InteractionManager.CanAdvanceEmerynInteraction() {
+					// Forcer une synchronisation complète de l'écran
+					gs.Screen.Sync()
+
+					// Clear la lore et faire avancer l'interaction
+					gs.LoreMessage = ""
+					gs.InteractionManager.AdvanceEmerynInteraction()
+
+					// Récupérer le nouveau message
+					result := gs.InteractionManager.HandleInteraction(w, gs.PlayerCharacter, x, y, "emeryn")
+					gs.LoreMessage = result.Message
+
+					// Un seul redraw final avec sync
+					gs.Draw()
+					gs.Screen.Sync()
+				}
 				return
 			}
 		}

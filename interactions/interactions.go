@@ -10,6 +10,7 @@ import (
 	"eldoria/combat"
 	"eldoria/items"
 	"eldoria/money"
+	"eldoria/npcs"
 	createcharacter "eldoria/player"
 	"eldoria/worlds"
 )
@@ -19,16 +20,30 @@ type ShopItem struct {
 	Price int
 }
 
+type RespawnData struct {
+	RespawnTime time.Time
+	ObjectType  string // "rock", "monster", etc.
+}
+
 type InteractionManager struct {
-	respawnQueue map[string]time.Time // Clé: x_y_world, Valeur: temps de respawn
+	respawnQueue map[string]RespawnData // Clé: x_y_world, Valeur: temps de respawn
 	inventory    *inventory.Inventory
 	playerMoney  *money.Money
 	shopItems    []ShopItem
+	emeryn       *npcs.NPC
 }
 
 func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *InteractionManager {
 	// Créer les objets de la boutique automatiquement à partir de tous les CraftingItems
 	var shopItems []ShopItem
+	// Ajout Heal potion depuis PotionsList
+	if healPotion, exists := items.PotionsList["Heal potion"]; exists {
+		shopItems = append(shopItems, ShopItem{
+			Item:  healPotion,
+			Price: healPotion.GetPrice(),
+		})
+	}
+
 	itemOrder := []string{"Bâton", "Pierre", "Papier", "Parchemin", "Ecaille d'Azador"}
 
 	for _, itemName := range itemOrder {
@@ -41,10 +56,11 @@ func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *
 	}
 
 	return &InteractionManager{
-		respawnQueue: make(map[string]time.Time),
+		respawnQueue: make(map[string]RespawnData),
 		inventory:    inv,
 		playerMoney:  playerMoney,
 		shopItems:    shopItems,
+		emeryn:       npcs.CreateEmeryn(),
 	}
 }
 
@@ -54,12 +70,13 @@ type InteractionResult struct {
 	ItemGained   items.Item
 	ShouldRemove bool
 	RespawnTime  time.Duration
+	EndGame      bool
 }
 
 func (im *InteractionManager) HandleInteraction(world *worlds.World, player *createcharacter.Character, x, y int, interactionType string) *InteractionResult {
 	switch interactionType {
 	case "pickup":
-		return im.handlePickup(world, x, y)
+		return im.handlePickup(world, player, x, y)
 	case "chest":
 		return im.handleChest(world, x, y)
 	case "door":
@@ -70,18 +87,91 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 		return im.handleMerchant(world, x, y)
 	case "blacksmith":
 		return im.handleBlacksmith(world, x, y)
-	case "monster":
-		monster := combat.GetRandomMonster()
-		combat.StartCombat(player, monster) // <-- passer l'instance du joueur
-		if player.CurrentHP > 0 {
+	case "emeryn":
+		return im.handleEmeryn(player)
+	case "portal":
+		return im.handlePortal(world, x, y)
+	case "boss":
+		boss := combat.NewMaximor()
+		win := combat.StartCombat(player, &boss.Monster)
+		if win {
 			return &InteractionResult{
 				Success: true,
-				Message: fmt.Sprintf("Vous avez vaincu le %s ! 🏆", monster.Name),
+				Message: fmt.Sprintf("🏆 Vous avez vaincu %s ! Le royaume est sauvé !", boss.Monster.Name),
+				EndGame: true, // <- signal fin du jeu
 			}
 		} else {
 			return &InteractionResult{
 				Success: false,
-				Message: fmt.Sprintf("Vous avez été vaincu par le %s... 💀", monster.Name),
+				Message: fmt.Sprintf("💀 %s vous a vaincu... Le royaume est perdu...", boss.Monster.Name),
+			}
+		}
+	case "monster":
+		monster := combat.NewRandomMonster()
+		win := combat.StartCombat(player, monster)
+		if win {
+			// Donner de l'EXP selon le type de monstre
+			var expGained int
+			switch monster.Name {
+			case "Apprenti Azador":
+				expGained = 5
+			case "Azador":
+				expGained = 10
+			case "Azador Chevalier":
+				expGained = 20
+			default:
+				expGained = 5 // XP par défaut
+			}
+
+			expMessage := player.AddExperience(expGained)
+
+			// Vérifier si c'est un Azador et si le joueur est à l'étape de quête appropriée
+			questMessage := ""
+			if strings.Contains(monster.Name, "Azador") {
+				questMessage = im.checkAzadorKillQuest(player)
+			}
+
+			if dropItem, exists := items.CraftingItems["Ecaille d'Azador"]; exists {
+				im.inventory.Add(dropItem, 1)
+				respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
+				im.respawnQueue[respawnKey] = RespawnData{
+					RespawnTime: time.Now().Add(20 * time.Second),
+					ObjectType:  "monster",
+				}
+
+				message := fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s !", monster.Name, dropItem.GetName())
+				if expMessage != "" {
+					message += "\n" + expMessage
+				}
+				if questMessage != "" {
+					message += "\n" + questMessage
+				}
+
+				return &InteractionResult{
+					Success:      true,
+					Message:      message,
+					ItemGained:   dropItem,
+					ShouldRemove: true,
+					RespawnTime:  20 * time.Second,
+				}
+			}
+
+			message := fmt.Sprintf("🏆 Vous avez vaincu %s !", monster.Name)
+			if expMessage != "" {
+				message += "\n" + expMessage
+			}
+			if questMessage != "" {
+				message += "\n" + questMessage
+			}
+
+			return &InteractionResult{
+				Success: true,
+				Message: message,
+			}
+		} else {
+			return &InteractionResult{
+				Success: false,
+				Message: fmt.Sprintf("💀 Vous avez été vaincu par %s...", monster.Name),
 			}
 		}
 	default:
@@ -92,7 +182,7 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 	}
 }
 
-func (im *InteractionManager) handlePickup(world *worlds.World, x, y int) *InteractionResult {
+func (im *InteractionManager) handlePickup(world *worlds.World, player *createcharacter.Character, x, y int) *InteractionResult {
 	objectType := world.GetObjectTypeAt(x, y)
 
 	switch objectType {
@@ -101,14 +191,24 @@ func (im *InteractionManager) handlePickup(world *worlds.World, x, y int) *Inter
 		if stoneItem, exists := items.CraftingItems["Pierre"]; exists {
 			im.inventory.Add(stoneItem, 1)
 
+			// Donner de l'EXP pour la récolte
+			expMessage := player.AddExperience(1)
+			message := "🪨 Pierre ramassée !"
+			if expMessage != "" {
+				message += "\n" + expMessage
+			}
+
 			// Planifier le respawn dans 10 secondes
 			// Utiliser un séparateur différent pour éviter les problèmes avec les espaces dans le nom du monde
 			respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
-			im.respawnQueue[respawnKey] = time.Now().Add(10 * time.Second)
+			im.respawnQueue[respawnKey] = RespawnData{
+				RespawnTime: time.Now().Add(10 * time.Second),
+				ObjectType:  "rock",
+			}
 
 			return &InteractionResult{
 				Success:      true,
-				Message:      fmt.Sprintf("🪨 Pierre ramassée ! Respawn programmé en (%d,%d) dans 10s", x, y),
+				Message:      message,
 				ItemGained:   stoneItem,
 				ShouldRemove: true,
 				RespawnTime:  10 * time.Second,
@@ -163,12 +263,10 @@ func (im *InteractionManager) handleTreasure(world *worlds.World, x, y int) *Int
 
 func (im *InteractionManager) handleMerchant(world *worlds.World, x, y int) *InteractionResult {
 	// Afficher la liste des objets disponibles
-	shopMessage := "🏪 Marchand : \"Bienvenue dans ma boutique !\"\n\nObjets disponibles :\n"
+	shopMessage := "💎 Sarhalia : \"Bienvenue dans ma boutique !\"\n\nArticles disponibles :\n"
 	for i, shopItem := range im.shopItems {
 		shopMessage += fmt.Sprintf("%d. %s - %d 💰\n", i+1, shopItem.Item.GetName(), shopItem.Price)
 	}
-	shopMessage += "\nVotre argent : " + fmt.Sprintf("%d 💰", im.playerMoney.Get())
-	shopMessage += "\n\nAppuyez sur [1-5] pour acheter un objet, ou [Échap] pour quitter."
 
 	return &InteractionResult{
 		Success: true,
@@ -218,46 +316,72 @@ func (im *InteractionManager) handleBlacksmith(world *worlds.World, x, y int) *I
 	}
 }
 
-// Méthode pour vérifier et respawner les objets
+func (im *InteractionManager) handleEmeryn(player *createcharacter.Character) *InteractionResult {
+	// Utiliser le nouveau système de messages d'Emeryn
+	message := im.emeryn.GetEmerynMessage(player)
+
+	return &InteractionResult{
+		Success: true,
+		Message: message,
+	}
+}
+
+func (im *InteractionManager) handlePortal(world *worlds.World, x, y int) *InteractionResult {
+	return &InteractionResult{
+		Success: true,
+		Message: "🌀 Portail mystérieux vers Eldoria. Appuyez sur [P] pour le déverrouiller ou utilisez [TAB] si déjà débloqué.",
+	}
+}
+
+// AdvanceEmerynInteraction fait avancer l'interaction avec Emeryn (appelé lors de l'appui sur espace)
+func (im *InteractionManager) AdvanceEmerynInteraction() {
+	im.emeryn.AdvanceEmerynPhase()
+}
+
+// CanAdvanceEmerynInteraction vérifie si on peut faire avancer l'interaction avec Emeryn
+func (im *InteractionManager) CanAdvanceEmerynInteraction() bool {
+	if im.emeryn == nil {
+		return false
+	}
+	return im.emeryn.CanAdvanceEmeryn()
+}
+
+// GetEmerynQuests retourne les quêtes d'Emeryn
+func (im *InteractionManager) GetEmerynQuests() []npcs.Quest {
+	if im.emeryn == nil {
+		return []npcs.Quest{}
+	}
+	return im.emeryn.Quests
+}
+
+// --- Respawn ---
 func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 	var messages []string
 	now := time.Now()
 
-	for respawnKey, respawnTime := range im.respawnQueue {
-		if now.After(respawnTime) {
-			// Parser la clé pour récupérer x, y et le nom du monde
+	for respawnKey, data := range im.respawnQueue {
+		if now.After(data.RespawnTime) {
 			parts := strings.Split(respawnKey, "|")
 			if len(parts) != 3 {
-				messages = append(messages, fmt.Sprintf("❌ Format respawn key invalide: %s", respawnKey))
 				delete(im.respawnQueue, respawnKey)
 				continue
 			}
 
-			x, err1 := strconv.Atoi(parts[0])
-			y, err2 := strconv.Atoi(parts[1])
+			x, _ := strconv.Atoi(parts[0])
+			y, _ := strconv.Atoi(parts[1])
 			worldName := parts[2]
 
-			if err1 != nil || err2 != nil {
-				messages = append(messages, fmt.Sprintf("❌ Erreur conversion coordonnées: %s", respawnKey))
-				delete(im.respawnQueue, respawnKey)
-				continue
-			}
-
 			if worldName == world.Name {
-				// Faire réapparaître l'objet
-				err := world.RespawnObject(x, y, "rock")
-				if err != nil {
-					messages = append(messages, fmt.Sprintf("❌ Erreur respawn: %v", err))
-				} else {
+				_ = world.RespawnObject(x, y, data.ObjectType)
+				if data.ObjectType == "rock" {
 					messages = append(messages, fmt.Sprintf("🪨 Un rocher a réapparu en (%d, %d)", x, y))
+				} else if data.ObjectType == "monster" {
+					messages = append(messages, fmt.Sprintf("👹 Un monstre a réapparu en (%d, %d)", x, y))
 				}
 			}
-
-			// Supprimer de la queue
 			delete(im.respawnQueue, respawnKey)
 		}
 	}
-
 	return messages
 }
 
@@ -277,7 +401,7 @@ func (im *InteractionManager) CheckNearbyInteractions(world *worlds.World) []str
 		x, y := coord[0], coord[1]
 		if x >= 0 && x < world.Width && y >= 0 && y < world.Height {
 			interactionType := world.GetInteractionType(x, y)
-			if interactionType != "none" && interactionType != "" {
+			if interactionType != "none" && interactionType != "" && interactionType != "door" {
 				objectName := world.GetObjectNameAt(x, y)
 				availableInteractions = append(availableInteractions,
 					fmt.Sprintf("Appuyez sur [E] près de %s pour %s", objectName, interactionType))
@@ -286,4 +410,28 @@ func (im *InteractionManager) CheckNearbyInteractions(world *worlds.World) []str
 	}
 
 	return availableInteractions
+}
+
+// checkAzadorKillQuest vérifie si tuer un Azador fait progresser la quête d'intro
+func (im *InteractionManager) checkAzadorKillQuest(player *createcharacter.Character) string {
+	if im.emeryn == nil {
+		return ""
+	}
+
+	// Vérifier la quête d'introduction d'Emeryn
+	for _, quest := range im.emeryn.Quests {
+		if quest.ID == "intro_quest" && !quest.Completed {
+			// Vérifier si on est à l'étape 1 (CurrentStep = 1, car 0-indexé)
+			// L'étape 1 correspond à "Tuer votre premier Azador"
+			if quest.CurrentStep == 1 {
+				// Valider l'étape de la quête directement via Emeryn
+				if im.emeryn.ValidateQuestStep(player, "intro_quest") {
+					return "✨ Quête mise à jour : Trouvez maintenant Valenric le forgeron !"
+				}
+			}
+			break
+		}
+	}
+
+	return ""
 }

@@ -13,14 +13,15 @@ import (
 
 // Structure Character
 type Character struct {
-	Name      string
-	Class     string
-	Level     int
-	MaxHP     int
-	CurrentHP int
-	Gold      money.Money
-	Inventory *inventory.Inventory
-	Icon      rune
+	Name       string
+	Class      string
+	Level      int
+	Experience int
+	MaxHP      int
+	CurrentHP  int
+	Gold       money.Money
+	Inventory  *inventory.Inventory
+	Icon       rune
 }
 
 // Fonction utilitaire pour mettre la première lettre en majuscule
@@ -98,30 +99,134 @@ func CreateCharacter() *Character {
 
 	chosenClass := classes[classChoice-1]
 
-	// HP de base selon la classe et choix de l’icône
+	// HP de base selon la classe
 	maxHP := 100
 	var icon rune
 
 	switch chosenClass {
 	case "Guerrier":
 		maxHP = 100
-		icon = '🛡' // Exemple pour Guerrier
+		icon = '🛡'
 	case "Mage":
 		maxHP = 80
-		icon = '🔮' // Exemple pour Mage
+		icon = '🔮'
 	case "Chasseur":
 		maxHP = 90
-		icon = '🪓' // Exemple pour Chasseur
+		icon = '🪓'
 	}
 
-	return &Character{
-		Name:      name,
-		Class:     chosenClass,
-		Level:     1,
-		MaxHP:     maxHP,
-		CurrentHP: maxHP,
-		Gold:      *money.NewMoney(100),     // chaque perso démarre avec 100 or
-		Inventory: inventory.NewInventory(), // inventaire vide au départ
-		Icon:      icon,
+	character := &Character{
+		Name:       name,
+		Class:      chosenClass,
+		Level:      1,
+		Experience: 0,
+		MaxHP:      maxHP,
+		CurrentHP:  maxHP,
+		Gold:       *money.NewMoney(100),     // chaque perso démarre avec 100 or
+		Inventory:  inventory.NewInventory(), // inventaire vide au départ
+		Icon:       icon,
 	}
+
+	// Mode God pour le nom "God"
+	if name == "God" {
+		character.Level = 5        // Niveau maximum
+		character.Experience = 200 // XP maximum
+		character.MaxHP = 9999     // HP quasi infini
+		character.CurrentHP = 9999
+		character.Gold = *money.NewMoney(999999) // Argent quasi infini
+		character.Icon = '👑'                     // Icône spéciale pour God
+	}
+
+	return character
+}
+
+// GetExpForLevel retourne l'expérience requise pour un niveau donné
+func (c *Character) GetExpForLevel(level int) int {
+	if level <= 1 {
+		return 0
+	}
+	// Progression d'EXP : niveau 2 = 50 EXP, niveau 3 = 100 EXP, niveau 4 = 150 EXP, niveau 5 = 200 EXP
+	expTable := []int{0, 50, 100, 150, 200}
+	if level > len(expTable) {
+		return expTable[len(expTable)-1]
+	}
+	return expTable[level-1]
+}
+
+// GetExpToNextLevel retourne l'expérience nécessaire pour passer au niveau suivant
+func (c *Character) GetExpToNextLevel() int {
+	if c.Level >= 5 {
+		return 0 // Niveau max atteint
+	}
+	return c.GetExpForLevel(c.Level+1) - c.Experience
+}
+
+// AddExperience ajoute de l'expérience et gère les montées de niveau
+func (c *Character) AddExperience(exp int) string {
+	if c.Level >= 5 {
+		return "" // Niveau max atteint, plus d'EXP
+	}
+
+	c.Experience += exp
+	message := fmt.Sprintf("💫 +%d EXP", exp)
+
+	// Vérifier si le joueur monte de niveau
+	for c.Level < 5 && c.Experience >= c.GetExpForLevel(c.Level+1) {
+		c.Level++
+
+		// Amélioration des stats à chaque niveau
+		oldMaxHP := c.MaxHP
+		c.MaxHP += 10 // +10 HP par niveau
+		hpGain := c.MaxHP - oldMaxHP
+		c.CurrentHP += hpGain // Restaurer les HP en montant de niveau
+
+		message += fmt.Sprintf("\n🎉 NIVEAU %d ATTEINT !\n💚 +%d HP max (nouveau total: %d)", c.Level, hpGain, c.MaxHP)
+
+		if c.Level >= 5 {
+			message += "\n⭐ NIVEAU MAXIMUM ATTEINT !"
+			break
+		}
+	}
+
+	return message
+}
+
+// GetExpProgress retourne les informations de progression d'expérience
+func (c *Character) GetExpProgress() string {
+	if c.Level >= 5 {
+		return fmt.Sprintf("Niveau %d (MAX)", c.Level)
+	}
+
+	nextLevelExp := c.GetExpForLevel(c.Level + 1)
+	expToNext := nextLevelExp - c.Experience
+
+	return fmt.Sprintf("Niveau %d (%d/%d EXP, %d restants)", c.Level, c.Experience, nextLevelExp, expToNext)
+}
+
+// GetAttack retourne la valeur d'attaque basée sur la classe et le niveau
+func (c *Character) GetAttack() int {
+	baseAttack := 5
+	switch c.Class {
+	case "Guerrier":
+		baseAttack = 8
+	case "Mage":
+		baseAttack = 6
+	case "Chasseur":
+		baseAttack = 7
+	}
+	return baseAttack + (c.Level - 1) // +1 attaque par niveau
+}
+
+// GetDefense retourne la valeur de défense basée sur la classe et le niveau
+func (c *Character) GetDefense() int {
+	baseDefense := 2
+	switch c.Class {
+	case "Guerrier":
+		baseDefense = 4
+	case "Mage":
+		baseDefense = 1
+	case "Chasseur":
+		baseDefense = 3
+	}
+	return baseDefense + (c.Level - 1) // +1 défense par niveau
 }
