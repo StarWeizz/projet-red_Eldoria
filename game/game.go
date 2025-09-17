@@ -8,8 +8,8 @@ import (
 	inventory "eldoria/Inventory"
 	"eldoria/interactions"
 	"eldoria/money"
-	"eldoria/worlds"
 	createcharacter "eldoria/player"
+	"eldoria/worlds"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
@@ -17,6 +17,7 @@ import (
 
 // GameState représente l'état du jeu
 type GameState struct {
+<<<<<<< HEAD
 	Screen              tcell.Screen
 	WorldList           []*worlds.World
 	CurrentWorld        int
@@ -27,6 +28,17 @@ type GameState struct {
 	LoreMessage         string
 	ShowingInventory    bool
 	PortalUnlocked      bool
+=======
+	Screen             tcell.Screen
+	WorldList          []*worlds.World
+	CurrentWorld       int
+	PlayerCharacter    *createcharacter.Character
+	PlayerMoney        *money.Money
+	PlayerInventory    *inventory.Inventory
+	InteractionManager *interactions.InteractionManager
+	LoreMessage        string
+	ShowingInventory   bool
+>>>>>>> origin/Mael2
 }
 
 // NewGameState crée un nouvel état de jeu
@@ -320,6 +332,7 @@ func (gs *GameState) StartRespawnChecker() *time.Ticker {
 
 	return respawnTicker
 }
+<<<<<<< HEAD
 
 // UnlockPortal débloque l'accès au portail
 func (gs *GameState) UnlockPortal() {
@@ -378,3 +391,5 @@ func abs(x int) int {
 	}
 	return x
 }
+=======
+>>>>>>> origin/Mael2

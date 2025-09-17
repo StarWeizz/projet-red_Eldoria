@@ -1,8 +1,4 @@
 package items
-<<<<<<< HEAD
-=======
-package items
->>>>>>> f8fb55b (Refactoring files)
 
 type CraftingItem struct {
 	Name        string
@@ -15,7 +11,6 @@ func (c CraftingItem) GetPrice() int {
 	return c.Price
 }
 
-<<<<<<< HEAD
 func (c CraftingItem) GetName() string {
 	return c.Name
 }
@@ -24,8 +19,6 @@ func (c CraftingItem) GetDescription() string {
 	return c.Description
 }
 
-=======
->>>>>>> f8fb55b (Refactoring files)
 var CraftingItems = map[string]CraftingItem{
 	"Bâton": {
 		Name:        "Bâton",
@@ -57,8 +50,4 @@ var CraftingItems = map[string]CraftingItem{
 		Price:       10,
 		// DropRate: 40,
 	},
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> f8fb55b (Refactoring files)

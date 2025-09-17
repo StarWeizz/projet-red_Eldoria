@@ -14,23 +14,23 @@ func main() {
 	// Initialiser l'écran
 	screen, err := tcell.NewScreen()
 	if err != nil {
-		log.Fatalf("%+v", err)
+		log.Fatalf("Erreur écran: %+v", err)
 	}
 	if err := screen.Init(); err != nil {
-		log.Fatalf("%+v", err)
+		log.Fatalf("Erreur Init écran: %+v", err)
 	}
 	defer screen.Fini()
 
 	// Créer le personnage via l'intro
 	playerCharacter := game.ShowIntroAndCreateCharacter(screen)
 
-	// Créer l'état du jeu
+	// Créer l'état du jeu avec le joueur
 	gameState := game.NewGameState(screen, playerCharacter)
 
 	// Charger les mondes
 	gameState.LoadWorlds()
 
-	// Initialiser le joueur
+	// Initialiser le joueur dans le monde courant
 	gameState.InitializePlayer()
 
 	// Démarrer le système de respawn
@@ -45,10 +45,22 @@ func main() {
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
+<<<<<<< HEAD
 			// Gestion des touches spéciales - Tab avec vérification du portail
 			if ev.Key() == tcell.KeyTab {
+=======
+			// Gestion des touches spéciales
+			switch ev.Key() {
+			case tcell.KeyTab:
+>>>>>>> origin/Mael2
 				gameState.SwitchWorld()
 				gameState.Draw()
+				continue
+			case tcell.KeyUp, tcell.KeyDown, tcell.KeyLeft, tcell.KeyRight:
+				if gameState.MovePlayer(ev.Key()) {
+					gameState.Draw()
+					gameState.CheckInteraction()
+				}
 				continue
 			}
 
@@ -65,20 +77,17 @@ func main() {
 				cmd.Run()
 
 				return
-
 			case 'e', 'E':
 				gameState.HandleInteractionKey()
-				continue
-
+				gameState.Draw()
 			case 'i', 'I':
 				gameState.ToggleInventory()
 				gameState.Draw()
-				continue
-
 			case '1', '2', '3', '4', '5':
 				itemIndex := int(ev.Rune() - '1')
 				gameState.HandleShopPurchase(itemIndex)
 				gameState.Draw()
+<<<<<<< HEAD
 				continue
 
 			case ' ':
@@ -98,6 +107,8 @@ func main() {
 					gameState.Draw()
 					gameState.CheckInteraction()
 				}
+=======
+>>>>>>> origin/Mael2
 			}
 
 		case *tcell.EventResize:
@@ -109,6 +120,7 @@ func main() {
 		}
 	}
 }
+<<<<<<< HEAD
 
 func showIntro(screen tcell.Screen) {
 	screen.Clear()
@@ -165,3 +177,5 @@ func showIntro(screen tcell.Screen) {
 		}
 	}
 }
+=======
+>>>>>>> origin/Mael2
