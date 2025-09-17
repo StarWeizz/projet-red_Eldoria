@@ -758,11 +758,13 @@
 		{ "x": 69, "y": 10, "object": "house_wall" },
 		{ "x": 70, "y": 10, "object": "house_floor" },
 		{ "x": 71, "y": 10, "object": "house_floor" },
-		{ "x": 72, "y": 10, "object": "house_wall" },
 		{ "x": 69, "y": 11, "object": "house_wall" },
 		{ "x": 70, "y": 11, "object": "house_door" },
 		{ "x": 71, "y": 11, "object": "house_wall" },
 		{ "x": 72, "y": 11, "object": "house_wall" },
+		{ "x": 73, "y": 9, "object": "house_wall" },
+		{ "x": 73, "y": 10, "object": "house_wall" },
+		{ "x": 73, "y": 11, "object": "house_wall" },
 
 		{ "x": 15, "y": 20, "object": "house_wall" },
 		{ "x": 14, "y": 20, "object": "house_wall" },
@@ -871,7 +873,7 @@
 		{ "x": 41, "y": 28, "object": "house_wall" },
 		{ "x": 41, "y": 33, "object": "house_wall" },
 
-		{ "x": 71, "y": 10, "object": "merchant" },
+		{ "x": 72, "y": 10, "object": "merchant" },
 		{ "x": 33, "y": 29, "object": "blacksmith" },
 		{ "x": 41, "y": 24, "object": "emeryn" },
 		{ "x": 10, "y": 10, "object": "portal" },

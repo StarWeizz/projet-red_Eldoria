@@ -108,6 +108,21 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 		monster := combat.NewRandomMonster()
 		win := combat.StartCombat(player, monster)
 		if win {
+			// Donner de l'EXP selon le type de monstre
+			var expGained int
+			switch monster.Name {
+			case "Apprenti Azador":
+				expGained = 5
+			case "Azador":
+				expGained = 10
+			case "Azador Chevalier":
+				expGained = 20
+			default:
+				expGained = 5 // XP par défaut
+			}
+
+			expMessage := player.AddExperience(expGained)
+
 			if dropItem, exists := items.CraftingItems["Ecaille d'Azador"]; exists {
 				im.inventory.Add(dropItem, 1)
 				respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
@@ -115,17 +130,29 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 					RespawnTime: time.Now().Add(20 * time.Second),
 					ObjectType:  "monster",
 				}
+
+				message := fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s !", monster.Name, dropItem.GetName())
+				if expMessage != "" {
+					message += "\n" + expMessage
+				}
+
 				return &InteractionResult{
 					Success:      true,
-					Message:      fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s !", monster.Name, dropItem.GetName()),
+					Message:      message,
 					ItemGained:   dropItem,
 					ShouldRemove: true,
 					RespawnTime:  20 * time.Second,
 				}
 			}
+
+			message := fmt.Sprintf("🏆 Vous avez vaincu %s !", monster.Name)
+			if expMessage != "" {
+				message += "\n" + expMessage
+			}
+
 			return &InteractionResult{
 				Success: true,
-				Message: fmt.Sprintf("🏆 Vous avez vaincu %s !", monster.Name),
+				Message: message,
 			}
 		} else {
 			return &InteractionResult{
