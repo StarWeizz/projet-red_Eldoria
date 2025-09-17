@@ -88,7 +88,7 @@
     "monster": {
       "symbol": "👹",
       "name": "monster",
-      "walkable": true,
+      "walkable": false,
       "interaction": "monster"
     }
   },
@@ -794,7 +794,7 @@
     {"x": 70, "y": 11, "object": "house_door"},
     {"x": 71, "y": 11, "object": "house_wall"},
     {"x": 72, "y": 11, "object": "house_wall"},
-    
+
     {"x": 15, "y": 20, "object": "house_wall"},
     {"x": 14, "y": 20, "object": "house_wall"},
     {"x": 16, "y": 20, "object": "house_wall"},
@@ -904,6 +904,22 @@
 
     {"x": 15, "y": 15, "object": "merchant"},
     {"x": 35, "y": 10, "object": "blacksmith"},
-    {"x": 25, "y": 33, "object": "monster"}
+
+    {"x": 16, "y": 28, "object": "monster"},
+    {"x": 8, "y": 12, "object": "monster"},
+    {"x": 22, "y": 16, "object": "monster"},
+    {"x": 24, "y": 20, "object": "monster"},
+    {"x": 53, "y": 17, "object": "monster"},
+    {"x": 72, "y": 26, "object": "monster"},
+    {"x": 61, "y": 32, "object": "monster"},
+    {"x": 36, "y": 32, "object": "monster"},
+    {"x": 75, "y": 14, "object": "monster"},
+    {"x": 4, "y": 11, "object": "monster"},
+    {"x": 3, "y": 30, "object": "monster"},
+    {"x": 41, "y": 24, "object": "monster"}
+
+
+
+
   ]
 }

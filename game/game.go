@@ -25,6 +25,7 @@ type GameState struct {
 	InteractionManager *interactions.InteractionManager
 	LoreMessage        string
 	ShowingInventory   bool
+	Ended              bool // <- Indique si le jeu est terminé
 }
 
 // NewGameState crée un nouvel état de jeu
@@ -43,21 +44,13 @@ func NewGameState(screen tcell.Screen, playerCharacter *createcharacter.Characte
 		InteractionManager: interactionManager,
 		LoreMessage:        "",
 		ShowingInventory:   false,
+		Ended:              false,
 	}
-}
-
-// GetInventoryCount compte les items dans l'inventaire
-func (gs *GameState) GetInventoryCount() int {
-	count := 0
-	for _, qty := range gs.PlayerInventory.Items {
-		count += qty
-	}
-	return count
 }
 
 // LoadWorlds charge les mondes depuis les fichiers de configuration
 func (gs *GameState) LoadWorlds() {
-	// Charger le monde Ynovia depuis JSON
+	// Exemple de chargement, adapte selon ton projet
 	ynoviaConfig, err := worlds.LoadWorldConfig("configs/ynovia.json")
 	if err != nil {
 		gs.WorldList = append(gs.WorldList, worlds.NewGrid("Monde Ynovia", 80, 35, 10, 10))
@@ -65,7 +58,6 @@ func (gs *GameState) LoadWorlds() {
 		gs.WorldList = append(gs.WorldList, worlds.NewWorldFromConfig(ynoviaConfig))
 	}
 
-	// Charger le monde Eldoria depuis JSON
 	eldoriaConfig, err := worlds.LoadWorldConfig("configs/eldoria.json")
 	if err != nil {
 		gs.WorldList = append(gs.WorldList, worlds.NewGrid("Monde Eldoria", 40, 25, 5, 5))
@@ -94,7 +86,10 @@ func (gs *GameState) Draw() {
 	if w.IsPlayerHidden() {
 		hiddenStatus = " - 🌿 CACHÉ des monstres"
 	}
-	inventoryCount := gs.GetInventoryCount()
+	inventoryCount := 0
+	for _, qty := range gs.PlayerInventory.Items {
+		inventoryCount += qty
+	}
 	topbar := fmt.Sprintf("%s (%s) - %d/%d ♥ - 💰 %d - 🎒 %d items - %s - X:%d Y:%d%s",
 		gs.PlayerCharacter.Name, gs.PlayerCharacter.Class,
 		gs.PlayerCharacter.CurrentHP, gs.PlayerCharacter.MaxHP,
@@ -115,23 +110,17 @@ func (gs *GameState) Draw() {
 		}
 	}
 
-	// Dessiner le joueur à sa position
+	// Dessiner le joueur
 	gs.Screen.SetContent(w.PlayerX*2, w.PlayerY+1, '😀', nil, tcell.StyleDefault)
 	gs.Screen.SetContent(w.PlayerX*2+1, w.PlayerY+1, ' ', nil, tcell.StyleDefault)
 
-	// Bottombar - Afficher les interactions disponibles
-	availableInteractions := gs.InteractionManager.CheckNearbyInteractions(w)
-	bottomY := screenHeight - 1
-
-	// Zone de lore/inventaire - Afficher sous la grille
-	loreY := w.Height + 2 // Juste sous la grille avec une ligne d'espace
-
+	// Interactions et lore
+	loreY := w.Height + 2
 	if gs.ShowingInventory {
-		// Afficher l'inventaire
 		inventoryText := gs.PlayerInventory.GetInventoryString()
 		lines := strings.Split(inventoryText, "\n")
 		for i, line := range lines {
-			if i < 10 && loreY+i < bottomY { // Limiter à 10 lignes et ne pas dépasser le bottombar
+			if i < 10 && loreY+i < screenHeight-1 {
 				for j, r := range line {
 					if j < screenWidth {
 						gs.Screen.SetContent(j, loreY+i, r, nil, tcell.StyleDefault.Foreground(tcell.ColorLightBlue))
@@ -140,7 +129,6 @@ func (gs *GameState) Draw() {
 			}
 		}
 	} else if gs.LoreMessage != "" {
-		// Afficher le message de lore en vert clair
 		for i, r := range gs.LoreMessage {
 			if i < screenWidth {
 				gs.Screen.SetContent(i, loreY, r, nil, tcell.StyleDefault.Foreground(tcell.ColorLightGreen))
@@ -148,42 +136,30 @@ func (gs *GameState) Draw() {
 		}
 	}
 
-	if len(availableInteractions) > 0 {
-		bottomText := availableInteractions[0] // Prendre la première interaction
-		for i, r := range bottomText {
-			if i < screenWidth {
-				gs.Screen.SetContent(i, bottomY, r, nil, tcell.StyleDefault.Foreground(tcell.ColorYellow))
-			}
-		}
-	} else {
-		// Afficher les commandes de base
-		defaultText := "Flèches: déplacer • [E]: interagir • [I]: inventaire • [TAB]: changer de monde • [Q]: quitter"
-		for i, r := range defaultText {
-			if i < screenWidth {
-				gs.Screen.SetContent(i, bottomY, r, nil, tcell.StyleDefault.Foreground(tcell.ColorGray))
-			}
-		}
-	}
-
 	gs.Screen.Show()
 }
 
-// StartRespawnChecker démarre la vérification périodique des respawns
+// StartRespawnChecker démarre le ticker de respawn
 func (gs *GameState) StartRespawnChecker() *time.Ticker {
-	respawnTicker := time.NewTicker(1 * time.Second)
-
+	ticker := time.NewTicker(1 * time.Second)
 	go func() {
-		for range respawnTicker.C {
+		for range ticker.C {
 			w := gs.WorldList[gs.CurrentWorld]
-			respawnMessages := gs.InteractionManager.CheckRespawns(w)
-			if len(respawnMessages) > 0 {
-				for _, msg := range respawnMessages {
+			messages := gs.InteractionManager.CheckRespawns(w)
+			if len(messages) > 0 {
+				for _, msg := range messages {
 					gs.LoreMessage = msg
 				}
-				gs.Draw() // Redessiner quand un respawn a lieu
+				gs.Draw()
 			}
 		}
 	}()
+	return ticker
+}
 
-	return respawnTicker
+// --- Fin du jeu ---
+func (gs *GameState) EndGame() {
+	gs.Ended = true
+	gs.Screen.Clear()
+	PrintEndGameAnimated(gs)
 }

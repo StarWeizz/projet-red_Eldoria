@@ -59,6 +59,7 @@ type InteractionResult struct {
 	ItemGained   items.Item
 	ShouldRemove bool
 	RespawnTime  time.Duration
+	EndGame      bool // <- nouveau champ
 }
 
 // --- Gestion des interactions ---
@@ -76,14 +77,27 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 		return im.handleMerchant(world, x, y)
 	case "blacksmith":
 		return im.handleBlacksmith(world, x, y)
+	case "boss":
+		boss := combat.NewMaximor()
+		win := combat.StartCombat(player, &boss.Monster)
+		if win {
+			return &InteractionResult{
+				Success: true,
+				Message: fmt.Sprintf("🏆 Vous avez vaincu %s ! Le royaume est sauvé !", boss.Monster.Name),
+				EndGame: true, // <- signal fin du jeu
+			}
+		} else {
+			return &InteractionResult{
+				Success: false,
+				Message: fmt.Sprintf("💀 %s vous a vaincu... Le royaume est perdu...", boss.Monster.Name),
+			}
+		}
 	case "monster":
 		monster := combat.NewRandomMonster()
 		win := combat.StartCombat(player, monster)
 		if win {
-			// Ajouter le drop du monstre
 			if dropItem, exists := items.CraftingItems["Ecaille d'Azador"]; exists {
 				im.inventory.Add(dropItem, 1)
-				// Planifier respawn du monstre
 				respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
 				im.respawnQueue[respawnKey] = RespawnData{
 					RespawnTime: time.Now().Add(20 * time.Second),
@@ -91,7 +105,7 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 				}
 				return &InteractionResult{
 					Success:      true,
-					Message:      fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s ! Il réapparaîtra en (%d,%d) dans 20s.", monster.Name, dropItem.GetName(), x, y),
+					Message:      fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s !", monster.Name, dropItem.GetName()),
 					ItemGained:   dropItem,
 					ShouldRemove: true,
 					RespawnTime:  20 * time.Second,
@@ -129,7 +143,7 @@ func (im *InteractionManager) handlePickup(world *worlds.World, player *createch
 			}
 			return &InteractionResult{
 				Success:      true,
-				Message:      fmt.Sprintf("🪨 Pierre ramassée ! Respawn programmé en (%d,%d) dans 10s", x, y),
+				Message:      fmt.Sprintf("🪨 Pierre ramassée !"),
 				ItemGained:   stoneItem,
 				ShouldRemove: true,
 				RespawnTime:  10 * time.Second,
@@ -177,11 +191,11 @@ func (im *InteractionManager) BuyItem(itemIndex int) *InteractionResult {
 	}
 	shopItem := im.shopItems[itemIndex]
 	if im.playerMoney.Get() < shopItem.Price {
-		return &InteractionResult{Success: false, Message: fmt.Sprintf("❌ Pas assez d'argent ! (%d nécessaires, %d disponibles)", shopItem.Price, im.playerMoney.Get())}
+		return &InteractionResult{Success: false, Message: "❌ Pas assez d'argent !"}
 	}
 	if im.playerMoney.Remove(shopItem.Price) {
 		im.inventory.Add(shopItem.Item, 1)
-		return &InteractionResult{Success: true, Message: fmt.Sprintf("✅ Vous avez acheté %s pour %d 💰 !", shopItem.Item.GetName(), shopItem.Price), ItemGained: shopItem.Item}
+		return &InteractionResult{Success: true, Message: fmt.Sprintf("✅ Vous avez acheté %s !", shopItem.Item.GetName()), ItemGained: shopItem.Item}
 	}
 	return &InteractionResult{Success: false, Message: "❌ Erreur lors de l'achat."}
 }
@@ -199,36 +213,25 @@ func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 		if now.After(data.RespawnTime) {
 			parts := strings.Split(respawnKey, "|")
 			if len(parts) != 3 {
-				messages = append(messages, fmt.Sprintf("❌ Format respawn invalide: %s", respawnKey))
 				delete(im.respawnQueue, respawnKey)
 				continue
 			}
 
-			x, err1 := strconv.Atoi(parts[0])
-			y, err2 := strconv.Atoi(parts[1])
+			x, _ := strconv.Atoi(parts[0])
+			y, _ := strconv.Atoi(parts[1])
 			worldName := parts[2]
-			if err1 != nil || err2 != nil {
-				messages = append(messages, fmt.Sprintf("❌ Erreur conversion coords: %s", respawnKey))
-				delete(im.respawnQueue, respawnKey)
-				continue
-			}
 
 			if worldName == world.Name {
-				err := world.RespawnObject(x, y, data.ObjectType)
-				if err != nil {
-					messages = append(messages, fmt.Sprintf("❌ Erreur respawn: %v", err))
-				} else {
-					if data.ObjectType == "rock" {
-						messages = append(messages, fmt.Sprintf("🪨 Un rocher a réapparu en (%d, %d)", x, y))
-					} else if data.ObjectType == "monster" {
-						messages = append(messages, fmt.Sprintf("👹 Un monstre a réapparu en (%d, %d)", x, y))
-					}
+				_ = world.RespawnObject(x, y, data.ObjectType)
+				if data.ObjectType == "rock" {
+					messages = append(messages, fmt.Sprintf("🪨 Un rocher a réapparu en (%d, %d)", x, y))
+				} else if data.ObjectType == "monster" {
+					messages = append(messages, fmt.Sprintf("👹 Un monstre a réapparu en (%d, %d)", x, y))
 				}
 			}
 			delete(im.respawnQueue, respawnKey)
 		}
 	}
-
 	return messages
 }
 
@@ -252,6 +255,5 @@ func (im *InteractionManager) CheckNearbyInteractions(world *worlds.World) []str
 			}
 		}
 	}
-
 	return available
 }

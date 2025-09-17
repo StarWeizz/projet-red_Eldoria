@@ -40,20 +40,69 @@ func main() {
 
 	// Boucle principale du jeu
 	for {
+		if gameState.Ended {
+			break
+		}
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
 			// Gestion des touches spéciales
 			switch ev.Key() {
 			case tcell.KeyTab:
-				gameState.SwitchWorld()
+				// Changer de monde
+				gameState.CurrentWorld = (gameState.CurrentWorld + 1) % len(gameState.WorldList)
 				gameState.Draw()
 				continue
 			case tcell.KeyUp, tcell.KeyDown, tcell.KeyLeft, tcell.KeyRight:
-				if gameState.MovePlayer(ev.Key()) {
-					gameState.Draw()
-					gameState.CheckInteraction()
+				// Déplacement du joueur
+				w := gameState.WorldList[gameState.CurrentWorld]
+				oldX, oldY := w.PlayerX, w.PlayerY
+				// Calculer la nouvelle position
+				newX, newY := w.PlayerX, w.PlayerY
+				switch ev.Key() {
+				case tcell.KeyUp:
+					if w.PlayerY > 0 {
+						newY--
+					}
+				case tcell.KeyDown:
+					if w.PlayerY < w.Height-1 {
+						newY++
+					}
+				case tcell.KeyLeft:
+					if w.PlayerX > 0 {
+						newX--
+					}
+				case tcell.KeyRight:
+					if w.PlayerX < w.Width-1 {
+						newX++
+					}
 				}
+				// Vérifier si la case est praticable et sans ennemi
+				targetTile := w.Grid[newY][newX]
+				walkable := w.IsWalkableFromConfig(targetTile)
+				enemyOnTile := false
+				for i := range w.Config.Enemies {
+					enemy := &w.Config.Enemies[i]
+					if enemy.X == newX && enemy.Y == newY && enemy.HP > 0 {
+						enemyOnTile = true
+						break
+					}
+				}
+				if walkable && !enemyOnTile {
+					// Déplacement autorisé
+					w.Grid[oldY][oldX] = w.OriginalTile
+					w.PlayerX, w.PlayerY = newX, newY
+					w.OriginalTile = w.Grid[w.PlayerY][w.PlayerX]
+					w.Grid[w.PlayerY][w.PlayerX] = '😀'
+				}
+				// Affiche un message si interaction possible autour
+				nearby := gameState.InteractionManager.CheckNearbyInteractions(w)
+				if len(nearby) > 0 {
+					gameState.LoreMessage = nearby[0]
+				} else {
+					gameState.LoreMessage = ""
+				}
+				gameState.Draw()
 				continue
 			}
 
@@ -65,6 +114,10 @@ func main() {
 				return
 			case 'e', 'E':
 				gameState.HandleInteractionKey()
+				if gameState.Ended {
+					// Quitte la boucle après la victoire
+					break
+				}
 				gameState.Draw()
 			case 'i', 'I':
 				gameState.ToggleInventory()
