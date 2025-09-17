@@ -42,6 +42,47 @@ func main() {
 
 	// Boucle principale du jeu
 	for {
+		if gameState.Ended {
+			break
+		}
+
+		// Vérifie si le héros est mort
+		if gameState.PlayerCharacter.CurrentHP <= 0 {
+			screen.Clear()
+			loseMsg := []string{
+				"__     ______  _    _   _      ____   _____ ______ ",
+				"\\ \\   / / __ \\| |  | | | |    / __ \\ / ____|  ____|",
+				" \\ \\_/ / |  | | |  | | | |   | |  | | (___ | |__   ",
+				"  \\   /| |  | | |  | | | |   | |  | |\\___ \\|  __|  ",
+				"   | | | |__| | |__| | | |___| |__| |____) | |____ ",
+				"   |_|  \\____/ \\____/  |______\\____/|_____/|______|",
+				"",
+				"                                         ",
+				"             VOUS AVEZ PERDU !           ",
+				"                                         ",
+				"Appuyez sur [Q] pour quitter le jeu."}
+			screenWidth, screenHeight := screen.Size()
+			startY := (screenHeight - len(loseMsg)) / 2
+			for i, line := range loseMsg {
+				startX := (screenWidth - len(line)) / 2
+				for j, r := range line {
+					if startX+j < screenWidth {
+						screen.SetContent(startX+j, startY+i, r, nil, tcell.StyleDefault.Foreground(tcell.ColorRed))
+					}
+				}
+			}
+			screen.Show()
+			// Attend que l'utilisateur appuie sur Q pour quitter
+			for {
+				ev := screen.PollEvent()
+				if keyEv, ok := ev.(*tcell.EventKey); ok {
+					if keyEv.Rune() == 'q' || keyEv.Rune() == 'Q' {
+						handleQuit(screen)
+					}
+				}
+			}
+		}
+
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
@@ -67,6 +108,7 @@ func main() {
 			// Gestion des touches par caractère
 			switch ev.Rune() {
 			case 'q', 'Q':
+<<<<<<< HEAD
 				// Restaurer le terminal proprement
 				screen.Fini()
 
@@ -80,6 +122,18 @@ func main() {
 			case 'e', 'E':
 				gameState.HandleInteractionKey()
 				gameState.Draw()
+=======
+				handleQuit(screen)
+
+			case 'e', 'E':
+				gameState.HandleInteractionKey()
+				if gameState.Ended {
+					// Quitte la boucle après la victoire
+					break
+				}
+				continue
+
+>>>>>>> antonin
 			case 'i', 'I':
 				gameState.ToggleInventory()
 				gameState.Draw()
@@ -96,6 +150,31 @@ func main() {
 
 			case 'p', 'P':
 				gameState.UnlockPortal()
+				gameState.Draw()
+				continue
+
+			case 'a', 'A':
+				// Utiliser une potion de soin si disponible
+				qty, ok := gameState.PlayerInventory.Items["Heal potion"]
+				if ok && qty > 0 {
+					potion, exists := gameState.PlayerInventory.Refs["Heal potion"]
+					if exists {
+						healValue := 20 // Valeur par défaut
+						if p, ok := potion.(interface{ GetHeal() int }); ok {
+							healValue = p.GetHeal()
+						}
+						gameState.PlayerCharacter.CurrentHP += healValue
+						if gameState.PlayerCharacter.CurrentHP > gameState.PlayerCharacter.MaxHP {
+							gameState.PlayerCharacter.CurrentHP = gameState.PlayerCharacter.MaxHP
+						}
+						gameState.PlayerInventory.Remove(potion, 1)
+						gameState.LoreMessage = "💊 Vous avez utilisé une potion de soin (+20 PV) !"
+					} else {
+						gameState.LoreMessage = "Potion de soin introuvable dans la liste des références."
+					}
+				} else {
+					gameState.LoreMessage = "Vous n'avez pas de potion de soin dans votre inventaire."
+				}
 				gameState.Draw()
 				continue
 			}
@@ -120,6 +199,7 @@ func main() {
 		}
 	}
 }
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 func showIntro(screen tcell.Screen) {
@@ -179,3 +259,17 @@ func showIntro(screen tcell.Screen) {
 }
 =======
 >>>>>>> origin/Mael2
+=======
+
+func handleQuit(screen tcell.Screen) {
+	screen.Fini()
+
+	// Restaurer complètement le terminal avec reset
+	cmd := exec.Command("reset")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
+
+	os.Exit(0)
+}
+>>>>>>> antonin

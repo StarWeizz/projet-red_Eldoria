@@ -192,6 +192,7 @@ func (c *Character) GetExpProgress() string {
 
 	return fmt.Sprintf("Niveau %d (%d/%d EXP, %d restants)", c.Level, c.Experience, nextLevelExp, expToNext)
 }
+<<<<<<< HEAD
 =======
 		Name:      name,
 		Class:     chosenClass,
@@ -203,3 +204,33 @@ func (c *Character) GetExpProgress() string {
 	}
 }
 >>>>>>> f8fb55b (Refactoring files)
+=======
+
+// GetAttack retourne la valeur d'attaque basée sur la classe et le niveau
+func (c *Character) GetAttack() int {
+	baseAttack := 5
+	switch c.Class {
+	case "Guerrier":
+		baseAttack = 8
+	case "Mage":
+		baseAttack = 6
+	case "Chasseur":
+		baseAttack = 7
+	}
+	return baseAttack + (c.Level - 1) // +1 attaque par niveau
+}
+
+// GetDefense retourne la valeur de défense basée sur la classe et le niveau
+func (c *Character) GetDefense() int {
+	baseDefense := 2
+	switch c.Class {
+	case "Guerrier":
+		baseDefense = 4
+	case "Mage":
+		baseDefense = 1
+	case "Chasseur":
+		baseDefense = 3
+	}
+	return baseDefense + (c.Level - 1) // +1 défense par niveau
+}
+>>>>>>> antonin

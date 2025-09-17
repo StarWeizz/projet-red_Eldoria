@@ -64,6 +64,12 @@ func (gs *GameState) HandleInteractionKey() {
 					w.RemoveObject(x, y)
 				}
 
+				// Vérifier si le jeu doit se terminer (victoire contre le boss)
+				if result.EndGame {
+					gs.EndGame()
+					return
+				}
+
 				// Redessiner immédiatement pour afficher le message
 				gs.Draw()
 				return // Sortir après la première interaction trouvée
