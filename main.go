@@ -43,6 +43,12 @@ func main() {
 	// Dessiner l'état initial
 	gameState.Draw()
 
+	// Ajout d'une arme à l'inventaire du joueur au début
+	arme := items.WeaponList["Lame rouillé"]
+	gameState.PlayerInventory.Add(arme, 1)
+	// Affichage de l'inventaire pour vérifier
+	gameState.PlayerInventory.List()
+
 	// Boucle principale du jeu
 	for {
 		if gameState.Ended {

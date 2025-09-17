@@ -23,11 +23,11 @@ func (p Potion) GetPrice() int {
 var PotionsList = map[string]Potion{
 	"Heal potion": {
 		Name:        "Heal potion",
-		Description: "Une potion qui soigne 20 PV.",
-		Heal:        20,
+		Description: "Une potion qui soigne 45 PV.",
+		Heal:        45,
 		Mana:        0,
 		Poison:      0,
-		Price:       30,
+		Price:       20,
 		//DropRate:    60,
 	},
 	"Poison potion": {

@@ -381,7 +381,7 @@
 		{ "x": 33, "y": 4, "object": "tree" },
 		{ "x": 34, "y": 4, "object": "tree" },
 		{ "x": 35, "y": 4, "object": "tree" },
-		
+
 		{ "x": 36, "y": 1, "object": "house_wall" },
 		{ "x": 37, "y": 1, "object": "house_wall" },
 		{ "x": 38, "y": 1, "object": "house_wall" },
@@ -899,7 +899,6 @@
 		{ "x": 75, "y": 14, "object": "monster" },
 		{ "x": 4, "y": 11, "object": "monster" },
 		{ "x": 3, "y": 30, "object": "monster" },
-		{ "x": 41, "y": 24, "object": "monster" },
 		{ "x": 12, "y": 15, "object": "stick" },
 		{ "x": 63, "y": 18, "object": "stick" },
 		{ "x": 66, "y": 26, "object": "stick" },
