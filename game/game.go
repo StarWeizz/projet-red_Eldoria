@@ -158,6 +158,9 @@ func (gs *GameState) LoadWorlds() {
 		gs.WorldList = append(gs.WorldList, worlds.NewWorldFromConfig(ynoviaConfig))
 	}
 
+	// Initialiser les bâtons dans le monde
+	gs.WorldList[len(gs.WorldList)-1].InitializeSticks()
+
 	// Charger le monde Eldoria depuis JSON
 	eldoriaConfig, err := worlds.LoadWorldConfig("configs/eldoria.json")
 	if err != nil {
@@ -165,6 +168,9 @@ func (gs *GameState) LoadWorlds() {
 	} else {
 		gs.WorldList = append(gs.WorldList, worlds.NewWorldFromConfig(eldoriaConfig))
 	}
+
+	// Initialiser les bâtons dans le monde
+	gs.WorldList[len(gs.WorldList)-1].InitializeSticks()
 }
 
 // InitializePlayer place le joueur dans le monde initial
@@ -251,6 +257,9 @@ func (gs *GameState) Draw() {
 	gs.Screen.SetContent(w.PlayerX*2, w.PlayerY+1, gs.PlayerCharacter.Icon, nil, tcell.StyleDefault)
 	gs.Screen.SetContent(w.PlayerX*2+1, w.PlayerY+1, ' ', nil, tcell.StyleDefault)
 
+	// Dessiner les bâtons disponibles
+	w.DrawSticks(gs.Screen)
+
 	// Bottombar - Afficher les interactions disponibles
 	availableInteractions := gs.InteractionManager.CheckNearbyInteractions(w)
 	bottomY := screenHeight - 1
@@ -323,6 +332,25 @@ func (gs *GameState) StartRespawnChecker() *time.Ticker {
 	}()
 
 	return respawnTicker
+}
+
+// StartStickRespawnChecker démarre la vérification périodique des respawns pour les bâtons
+func (gs *GameState) StartStickRespawnChecker() *time.Ticker {
+	stickRespawnTicker := time.NewTicker(10 * time.Second) // Intervalle de respawn des bâtons
+
+	go func() {
+		for range stickRespawnTicker.C {
+			w := gs.WorldList[gs.CurrentWorld]
+			for _, stick := range w.Sticks {
+				if !stick.IsAvailable {
+					stick.IsAvailable = true
+				}
+			}
+			gs.Draw() // Redessiner quand un respawn a lieu
+		}
+	}()
+
+	return stickRespawnTicker
 }
 
 // UnlockPortal débloque l'accès au portail
