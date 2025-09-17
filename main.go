@@ -43,6 +43,42 @@ func main() {
 		if gameState.Ended {
 			break
 		}
+		// Vérifie si le héros est mort
+		if gameState.PlayerCharacter.CurrentHP <= 0 {
+			screen.Clear()
+			loseMsg := []string{
+				"__     ______  _    _   _      ____   _____ ______ ",
+				"\\ \\   / / __ \\| |  | | | |    / __ \\ / ____|  ____|",
+				" \\ \\_/ / |  | | |  | | | |   | |  | | (___ | |__   ",
+				"  \\   /| |  | | |  | | | |   | |  | |\\___ \\|  __|  ",
+				"   | | | |__| | |__| | | |___| |__| |____) | |____ ",
+				"   |_|  \\____/ \\____/  |______\\____/|_____/|______|",
+				"",
+				"                                         ",
+				"             VOUS AVEZ PERDU !           ",
+				"                                         ",
+				"Appuyez sur [Q] pour quitter le jeu."}
+			screenWidth, screenHeight := screen.Size()
+			startY := (screenHeight - len(loseMsg)) / 2
+			for i, line := range loseMsg {
+				startX := (screenWidth - len(line)) / 2
+				for j, r := range line {
+					if startX+j < screenWidth {
+						screen.SetContent(startX+j, startY+i, r, nil, tcell.StyleDefault.Foreground(tcell.ColorRed))
+					}
+				}
+			}
+			screen.Show()
+			// Attend que l'utilisateur appuie sur Q pour quitter
+			for {
+				ev := screen.PollEvent()
+				if keyEv, ok := ev.(*tcell.EventKey); ok {
+					if keyEv.Rune() == 'q' || keyEv.Rune() == 'Q' {
+						return
+					}
+				}
+			}
+		}
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
