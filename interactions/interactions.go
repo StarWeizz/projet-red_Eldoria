@@ -343,9 +343,26 @@ func (im *InteractionManager) BuyItem(itemIndex int) *InteractionResult {
 }
 
 func (im *InteractionManager) handleBlacksmith(world *worlds.World, x, y int) *InteractionResult {
+	// Générer la liste des armes upgrade possibles
+	upgradeOptions := im.getWeaponUpgradeOptions()
+
+	message := "⚒️ Valenric : \"Salut aventurier ! Je peux upgrader tes armes !\"\n\n"
+
+	if len(upgradeOptions) == 0 {
+		message += "Tu n'as pas d'armes upgradables pour le moment.\n"
+		message += "Apporte-moi 2 armes du même niveau et je les combinerai en une arme plus puissante !"
+	} else {
+		message += "Armes upgradables :\n"
+		for i, option := range upgradeOptions {
+			message += fmt.Sprintf("%d. %s (x2) → %s\n", i+1, option.Current.GetName(), option.Next.GetName())
+		}
+		message += "\nAppuyez sur [1-%d] pour upgrader l'arme correspondante."
+		message = fmt.Sprintf(message, len(upgradeOptions))
+	}
+
 	return &InteractionResult{
 		Success: true,
-		Message: "⚒️ Forgeron : \"Salut aventurier ! Je peux forger des armes et armures pour toi. Tu as des matériaux à transformer ?\"",
+		Message: message,
 	}
 }
 
@@ -469,4 +486,73 @@ func (im *InteractionManager) checkAzadorKillQuest(player *createcharacter.Chara
 	}
 
 	return ""
+}
+
+// UpgradeOption représente une option d'upgrade d'arme
+type UpgradeOption struct {
+	Current items.Item
+	Next    items.Item
+}
+
+// getWeaponUpgradeOptions retourne les options d'upgrade disponibles
+func (im *InteractionManager) getWeaponUpgradeOptions() []UpgradeOption {
+	var options []UpgradeOption
+
+	// Mapper les upgrades d'armes
+	weaponUpgrades := map[string]string{
+		"Lame rouillé":        "épée de chevalier",
+		"épée de chevalier":   "Epée Démoniaque",
+		"Grimoire":           "Livre de Magie",
+		"Livre de Magie":     "Livre des Ombre",
+		"Couteaux de Chasse": "épée court runique",
+		"épée court runique": "Dague de l'ombre",
+	}
+
+	// Vérifier chaque arme upgradable dans l'inventaire
+	for currentName, nextName := range weaponUpgrades {
+		// Vérifier si le joueur a au moins 2 de l'arme actuelle
+		if quantity, exists := im.inventory.Items[currentName]; exists && quantity >= 2 {
+			// Vérifier si l'arme suivante existe
+			if currentWeapon, currentExists := items.WeaponList[currentName]; currentExists {
+				if nextWeapon, nextExists := items.WeaponList[nextName]; nextExists {
+					options = append(options, UpgradeOption{
+						Current: currentWeapon,
+						Next:    nextWeapon,
+					})
+				}
+			}
+		}
+	}
+
+	return options
+}
+
+// PerformWeaponUpgrade effectue l'upgrade d'une arme
+func (im *InteractionManager) PerformWeaponUpgrade(optionIndex int) *InteractionResult {
+	options := im.getWeaponUpgradeOptions()
+
+	if optionIndex < 0 || optionIndex >= len(options) {
+		return &InteractionResult{
+			Success: false,
+			Message: "❌ Option d'upgrade invalide.",
+		}
+	}
+
+	option := options[optionIndex]
+
+	// Retirer 2 armes actuelles
+	if !im.inventory.Remove(option.Current, 2) {
+		return &InteractionResult{
+			Success: false,
+			Message: "❌ Pas assez d'armes à upgrader.",
+		}
+	}
+
+	// Ajouter l'arme upgradée
+	im.inventory.Add(option.Next, 1)
+
+	return &InteractionResult{
+		Success: true,
+		Message: fmt.Sprintf("⚒️ Upgrade réussie ! Vous avez obtenu %s !", option.Next.GetName()),
+	}
 }

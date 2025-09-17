@@ -152,17 +152,27 @@ func main() {
 								gameState.PlayerInventory.Remove(ref, qty)
 							}
 						}
+						// Vérifier d'abord dans CraftingItems, puis dans WeaponList
 						if craftItem, ok := items.CraftingItems[recipe.Result]; ok {
 							gameState.PlayerInventory.Add(craftItem, 1)
 							gameState.LoreMessage = "🛠️ Vous avez crafté : " + recipe.Result
+						} else if weaponItem, ok := items.WeaponList[recipe.Result]; ok {
+							gameState.PlayerInventory.Add(weaponItem, 1)
+							gameState.LoreMessage = "⚔️ Vous avez forgé : " + recipe.Result
 						} else {
-							gameState.LoreMessage = "Recette craftée : " + recipe.Result + " (objet non trouvé dans CraftingItems)"
+							gameState.LoreMessage = "Recette craftée : " + recipe.Result + " (objet non trouvé)"
 						}
 						gameState.Draw()
 					}
 				} else if gameState.LoreMessage != "" && (strings.Contains(gameState.LoreMessage, "Marchand") || strings.Contains(gameState.LoreMessage, "Bienvenue")) {
 					itemIndex := int(ev.Rune() - '1')
 					gameState.HandleShopPurchase(itemIndex)
+					gameState.Draw()
+				} else if gameState.LoreMessage != "" && strings.Contains(gameState.LoreMessage, "Valenric") {
+					// Gestion des upgrades d'armes chez Valenric
+					upgradeIndex := int(ev.Rune() - '1')
+					result := gameState.InteractionManager.PerformWeaponUpgrade(upgradeIndex)
+					gameState.LoreMessage = result.Message
 					gameState.Draw()
 				}
 

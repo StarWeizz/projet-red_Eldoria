@@ -860,7 +860,6 @@
 		{ "x": 30, "y": 29, "object": "house_door" },
 		{ "x": 31, "y": 29, "object": "house_floor" },
 		{ "x": 32, "y": 29, "object": "house_floor" },
-		{ "x": 33, "y": 29, "object": "house_floor" },
 		{ "x": 34, "y": 29, "object": "house_wall" },
 		{ "x": 30, "y": 30, "object": "house_wall" },
 		{ "x": 31, "y": 30, "object": "house_wall" },
