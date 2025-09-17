@@ -45,6 +45,7 @@ func NewGameState(screen tcell.Screen, playerCharacter *createcharacter.Characte
 		InteractionManager: interactionManager,
 		LoreMessage:        "",
 		ShowingInventory:   false,
+		PortalUnlocked:     false,
 	}
 }
 
@@ -318,4 +319,62 @@ func (gs *GameState) StartRespawnChecker() *time.Ticker {
 	}()
 
 	return respawnTicker
+}
+
+// UnlockPortal débloque l'accès au portail
+func (gs *GameState) UnlockPortal() {
+	gs.PortalUnlocked = true
+	gs.LoreMessage = "🌟 PORTAIL DÉBLOQUÉ ! Vous pouvez maintenant utiliser [TAB] pour changer de monde ou [E] près du portail pour vous téléporter !"
+}
+
+
+// CheckPortalProximity vérifie si le joueur est près du portail
+func (gs *GameState) CheckPortalProximity() bool {
+	if gs.CurrentWorld != 0 { // Le portail est seulement dans Ynovia (monde 0)
+		return false
+	}
+
+	world := gs.WorldList[gs.CurrentWorld]
+	portalX, portalY := 10, 10 // Position du portail dans ynovia.json
+
+	// Vérifier si le joueur est adjacent au portail (distance de 1)
+	distance := abs(world.PlayerX - portalX) + abs(world.PlayerY - portalY)
+	return distance <= 1
+}
+
+// TeleportToEldoria téléporte le joueur vers Eldoria via le portail
+func (gs *GameState) TeleportToEldoria() {
+	if !gs.PortalUnlocked {
+		gs.LoreMessage = "❌ Le portail est verrouillé ! Vous n'avez pas encore débloqué l'accès."
+		return
+	}
+
+	if !gs.CheckPortalProximity() {
+		gs.LoreMessage = "❌ Vous devez être près du portail pour l'utiliser !"
+		return
+	}
+
+	if len(gs.WorldList) > 1 {
+		// Retirer le joueur du monde actuel
+		currentWorld := gs.WorldList[gs.CurrentWorld]
+		currentWorld.Grid[currentWorld.PlayerY][currentWorld.PlayerX] = currentWorld.OriginalTile
+
+		// Aller vers Eldoria (monde 1)
+		gs.CurrentWorld = 1
+		newWorld := gs.WorldList[gs.CurrentWorld]
+
+		// Placer le joueur dans Eldoria
+		newWorld.OriginalTile = newWorld.Grid[newWorld.PlayerY][newWorld.PlayerX]
+		newWorld.Grid[newWorld.PlayerY][newWorld.PlayerX] = '😀'
+
+		gs.LoreMessage = "🌟 Téléportation vers Eldoria via le portail réussie !"
+	}
+}
+
+// abs retourne la valeur absolue d'un entier
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
