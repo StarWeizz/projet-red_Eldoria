@@ -1,9 +1,16 @@
 package combat
 
 import (
+	createcharacter "eldoria/player"
+	"fmt"
 	"math/rand"
 	"time"
 )
+
+type Boss struct {
+	Monster
+	SpecialCooldown int // compteur pour attaque spéciale
+}
 
 // Structure Monster
 type Monster struct {
@@ -30,25 +37,56 @@ func (m *Monster) TakeDamage(damage int) int {
 	return damage
 }
 
-// ---------- BESTIAIRE ----------
-
-// Liste des monstres de base
-var Bestiary = []*Monster{
-	{Name: "Gobelin", HP: 30, Attack: 6, Defense: 2},
-	{Name: "Orc", HP: 50, Attack: 10, Defense: 4},
-	{Name: "Loup", HP: 40, Attack: 8, Defense: 3},
-	{Name: "Troll", HP: 70, Attack: 12, Defense: 5},
-}
-
-// Tire un monstre aléatoire dans le bestiaire
-func GetRandomMonster() *Monster {
-	rand.Seed(time.Now().UnixNano())
-	monster := Bestiary[rand.Intn(len(Bestiary))]
-	// Retourne une copie pour ne pas modifier l'original
-	return &Monster{
-		Name:    monster.Name,
-		HP:      monster.HP,
-		Attack:  monster.Attack,
-		Defense: monster.Defense,
+// Crée le Boss Maximor
+func NewMaximor() *Boss {
+	return &Boss{
+		Monster: Monster{
+			Name:    "Maximor",
+			HP:      50,
+			Attack:  3,
+			Defense: 3,
+		},
+		SpecialCooldown: 0,
 	}
 }
+
+func (b *Boss) AttackHero(h *createcharacter.Character) int {
+	rand.Seed(time.Now().UnixNano())
+
+	// Vérifier si attaque spéciale prête
+	if b.SpecialCooldown <= 0 && rand.Intn(100) < 30 { // 30% de chance
+		b.SpecialCooldown = 3    // cooldown 3 tours
+		damage := b.Attack*2 - 2 // dégâts spéciaux, moins la défense du héros
+		if damage < 0 {
+			damage = 0
+		}
+		fmt.Printf("💥 %s utilise Frappe Dévastatrice et inflige %d dégâts !\n", b.Name, damage)
+		return damage
+	}
+
+	// Attaque normale
+	damage := b.Attack - 3 // remplacer 3 par h.Defense si déf finie
+	if damage < 0 {
+		damage = 0
+	}
+
+	// Réduire le cooldown si nécessaire
+	if b.SpecialCooldown > 0 {
+		b.SpecialCooldown--
+	}
+
+	return damage
+}
+
+func NewRandomMonster() *Monster {
+	rand.Seed(time.Now().UnixNano())
+
+	monsters := []*Monster{
+		{Name: "Apprenti Azador", HP: 25, Attack: 5, Defense: 2},
+		{Name: "Azador", HP: 35, Attack: 7, Defense: 3},
+		{Name: "Azador Chevalier", HP: 50, Attack: 9, Defense: 4},
+	}
+
+	return monsters[rand.Intn(len(monsters))]
+}
+

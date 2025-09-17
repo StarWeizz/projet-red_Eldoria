@@ -2,14 +2,16 @@ package game
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
 	inventory "eldoria/Inventory"
 	"eldoria/interactions"
 	"eldoria/money"
-	"eldoria/worlds"
 	createcharacter "eldoria/player"
+	"eldoria/worlds"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
@@ -17,16 +19,17 @@ import (
 
 // GameState représente l'état du jeu
 type GameState struct {
-	Screen              tcell.Screen
-	WorldList           []*worlds.World
-	CurrentWorld        int
-	PlayerCharacter     *createcharacter.Character
-	PlayerMoney         *money.Money
-	PlayerInventory     *inventory.Inventory
-	InteractionManager  *interactions.InteractionManager
-	LoreMessage         string
-	ShowingInventory    bool
-	PortalUnlocked      bool
+	Screen             tcell.Screen
+	WorldList          []*worlds.World
+	CurrentWorld       int
+	PlayerCharacter    *createcharacter.Character
+	PlayerMoney        *money.Money
+	PlayerInventory    *inventory.Inventory
+	InteractionManager *interactions.InteractionManager
+	LoreMessage        string
+	ShowingInventory   bool
+	PortalUnlocked     bool
+	Ended              bool
 }
 
 // NewGameState crée un nouvel état de jeu
@@ -46,6 +49,7 @@ func NewGameState(screen tcell.Screen, playerCharacter *createcharacter.Characte
 		LoreMessage:        "",
 		ShowingInventory:   false,
 		PortalUnlocked:     false,
+		Ended:              false,
 	}
 }
 
@@ -216,7 +220,7 @@ func (gs *GameState) Draw() {
 		charWidth := runewidth.RuneWidth(r)
 
 		// Vérifier s'il y a assez d'espace pour ce caractère
-		if displayPos + charWidth > screenWidth {
+		if displayPos+charWidth > screenWidth {
 			break
 		}
 
@@ -308,9 +312,9 @@ func (gs *GameState) StartRespawnChecker() *time.Ticker {
 	go func() {
 		for range respawnTicker.C {
 			w := gs.WorldList[gs.CurrentWorld]
-			respawnMessages := gs.InteractionManager.CheckRespawns(w)
-			if len(respawnMessages) > 0 {
-				for _, msg := range respawnMessages {
+			messages := gs.InteractionManager.CheckRespawns(w)
+			if len(messages) > 0 {
+				for _, msg := range messages {
 					gs.LoreMessage = msg
 				}
 				gs.Draw() // Redessiner quand un respawn a lieu
@@ -327,7 +331,6 @@ func (gs *GameState) UnlockPortal() {
 	gs.LoreMessage = "🌟 PORTAIL DÉBLOQUÉ ! Vous pouvez maintenant utiliser [TAB] pour changer de monde ou [E] près du portail pour vous téléporter !"
 }
 
-
 // CheckPortalProximity vérifie si le joueur est près du portail
 func (gs *GameState) CheckPortalProximity() bool {
 	if gs.CurrentWorld != 0 { // Le portail est seulement dans Ynovia (monde 0)
@@ -338,7 +341,7 @@ func (gs *GameState) CheckPortalProximity() bool {
 	portalX, portalY := 10, 10 // Position du portail dans ynovia.json
 
 	// Vérifier si le joueur est adjacent au portail (distance de 1)
-	distance := abs(world.PlayerX - portalX) + abs(world.PlayerY - portalY)
+	distance := abs(world.PlayerX-portalX) + abs(world.PlayerY-portalY)
 	return distance <= 1
 }
 
@@ -377,4 +380,29 @@ func abs(x int) int {
 		return -x
 	}
 	return x
+}
+
+// --- Fin du jeu ---
+func (gs *GameState) EndGame() {
+	gs.Ended = true
+	gs.Screen.Clear()
+	PrintEndGameAnimated(gs)
+
+	// Attendre que l'utilisateur appuie sur Q pour quitter
+	for {
+		ev := gs.Screen.PollEvent()
+		if keyEv, ok := ev.(*tcell.EventKey); ok {
+			if keyEv.Rune() == 'q' || keyEv.Rune() == 'Q' {
+				gs.Screen.Fini()
+
+				// Restaurer complètement le terminal avec reset
+				cmd := exec.Command("reset")
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				cmd.Run()
+
+				os.Exit(0)
+			}
+		}
+	}
 }
