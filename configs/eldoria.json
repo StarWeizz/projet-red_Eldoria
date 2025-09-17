@@ -2,72 +2,74 @@
   "name": "Monde Eldoria",
   "width": 40,
   "height": 25,
-  "player_start_x": 2,
-  "player_start_y": 2,
+  "player_start_x": 19,
+  "player_start_y": 3,
   "default_tile": "🟫",
   "border_tile": "🧱",
   "game_objects": {
-    "castle": {
-      "symbol": "🏰",
-      "name": "Château",
-      "walkable": false,
-      "interaction": "castle"
-    },
+		"portal": {
+			"symbol": "🌀",
+			"name": "Portail",
+			"walkable": true,
+			"interaction": "portal"
+		},
     "tree": {
       "symbol": "🌲",
       "name": "Sapin",
       "walkable": true,
       "interaction": "hidden"
     },
-    "mushroom": {
-      "symbol": "🍄",
-      "name": "Champignon",
-      "walkable": true,
-      "interaction": "mushroom"
-    },
-    "sword": {
-      "symbol": "⚔️",
-      "name": "Épée",
-      "walkable": true,
-      "interaction": "weapon"
-    },
-    "shield": {
-      "symbol": "🛡️",
-      "name": "Bouclier",
-      "walkable": true,
-      "interaction": "armor"
-    },
+    "monster": {
+			"symbol": "👹",
+			"name": "monster",
+			"walkable": false,
+			"interaction": "monster"
+		},
     "Maximor": {
       "symbol": "💀",
       "name": "Maximor",
       "walkable": false,
       "interaction": "boss"
-    },
-    "fire": {
-      "symbol": "🔥",
-      "name": "Feu",
-      "walkable": false,
-      "interaction": "damage"
-    },
-    "potion": {
-      "symbol": "🧪",
-      "name": "Potion",
-      "walkable": true,
-      "interaction": "heal"
-    }
+  }
   },
   "objects": [
-    {"x": 20, "y": 12, "object": "castle"},
-    {"x": 5, "y": 5, "object": "tree"},
-    {"x": 8, "y": 8, "object": "mushroom"},
-    {"x": 15, "y": 6, "object": "sword"},
-    {"x": 25, "y": 8, "object": "shield"},
-    {"x": 35, "y": 20, "object": "Maximor"},
-    {"x": 34, "y": 20, "object": "fire"},
-    {"x": 36, "y": 20, "object": "fire"},
-    {"x": 10, "y": 15, "object": "potion"},
-    {"x": 30, "y": 5, "object": "tree"},
-    {"x": 12, "y": 20, "object": "mushroom"},
-    {"x": 18, "y": 18, "object": "potion"}
+    {"x": 19, "y": 12, "object": "Maximor"},
+    {"x": 19, "y": 2, "object": "portal"},
+
+    {"x": 17, "y": 15, "object": "tree"},
+    {"x": 20, "y": 15, "object": "tree"},
+    {"x": 18, "y": 15, "object": "tree"},
+    {"x": 16, "y": 14, "object": "tree"},
+    {"x": 19, "y": 15, "object": "tree"},
+    {"x": 22, "y": 14, "object": "tree"},
+    {"x": 21, "y": 15, "object": "tree"},
+
+    {"x": 15, "y": 13, "object": "tree"},
+    {"x": 15, "y": 12, "object": "tree"},
+    {"x": 15, "y": 11, "object": "tree"},
+    {"x": 15, "y": 10, "object": "tree"},
+    {"x": 16, "y": 9, "object": "tree"},
+    {"x": 23, "y": 13, "object": "tree"},
+    {"x": 23, "y": 12, "object": "tree"},
+    {"x": 23, "y": 11, "object": "tree"},
+    {"x": 23, "y": 10, "object": "tree"},
+    {"x": 22, "y": 9, "object": "tree"},
+
+  {"x": 9, "y": 6, "object": "monster"},
+  {"x": 4, "y": 9, "object": "monster"},
+  {"x": 10, "y": 12, "object": "monster"},
+  {"x": 4, "y": 13, "object": "monster"},
+  {"x": 4, "y": 4, "object": "monster"},
+  {"x": 5, "y": 19, "object": "monster"},
+  {"x": 9, "y": 20, "object": "monster"},
+  {"x": 12, "y": 21, "object": "monster"},
+  {"x": 25, "y": 21, "object": "monster"},
+  {"x": 30, "y": 19, "object": "monster"},
+  {"x": 35, "y": 18, "object": "monster"},
+  {"x": 28, "y": 14, "object": "monster"},
+  {"x": 34, "y": 8, "object": "monster"},
+  {"x": 31, "y": 5, "object": "monster"},
+  {"x": 35, "y": 3, "object": "monster"},
+  {"x": 19, "y": 19, "object": "monster"}
   ]
 }

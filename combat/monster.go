@@ -42,8 +42,8 @@ func NewMaximor() *Boss {
 	return &Boss{
 		Monster: Monster{
 			Name:    "Maximor",
-			HP:      50,
-			Attack:  3,
+			HP:      150,
+			Attack:  10,
 			Defense: 3,
 		},
 		SpecialCooldown: 0,
@@ -89,4 +89,3 @@ func NewRandomMonster() *Monster {
 
 	return monsters[rand.Intn(len(monsters))]
 }
-

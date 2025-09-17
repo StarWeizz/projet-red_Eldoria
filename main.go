@@ -241,7 +241,7 @@ func main() {
 				if ok && qty > 0 {
 					potion, exists := gameState.PlayerInventory.Refs["Heal potion"]
 					if exists {
-						healValue := 20 // Valeur par défaut
+						healValue := 45 // Valeur par défaut
 						if p, ok := potion.(interface{ GetHeal() int }); ok {
 							healValue = p.GetHeal()
 						}
@@ -250,7 +250,7 @@ func main() {
 							gameState.PlayerCharacter.CurrentHP = gameState.PlayerCharacter.MaxHP
 						}
 						gameState.PlayerInventory.Remove(potion, 1)
-						gameState.LoreMessage = "💊 Vous avez utilisé une potion de soin (+20 PV) !"
+						gameState.LoreMessage = "💊 Vous avez utilisé une potion de soin (+45 PV) !"
 					} else {
 						gameState.LoreMessage = "Potion de soin introuvable dans la liste des références."
 					}

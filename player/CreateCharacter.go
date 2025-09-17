@@ -176,7 +176,7 @@ func (c *Character) AddExperience(exp int) string {
 
 		// Amélioration des stats à chaque niveau
 		oldMaxHP := c.MaxHP
-		c.MaxHP += 10 // +10 HP par niveau
+		c.MaxHP += 15 // +15 HP par niveau
 		hpGain := c.MaxHP - oldMaxHP
 		c.CurrentHP += hpGain // Restaurer les HP en montant de niveau
 
