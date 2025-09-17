@@ -115,7 +115,7 @@ func CreateCharacter() *Character {
 		icon = '🪓'
 	}
 
-	return &Character{
+	character := &Character{
 		Name:       name,
 		Class:      chosenClass,
 		Level:      1,
@@ -126,6 +126,18 @@ func CreateCharacter() *Character {
 		Inventory:  inventory.NewInventory(), // inventaire vide au départ
 		Icon:       icon,
 	}
+
+	// Mode God pour le nom "God"
+	if name == "God" {
+		character.Level = 5      // Niveau maximum
+		character.Experience = 200 // XP maximum
+		character.MaxHP = 9999   // HP quasi infini
+		character.CurrentHP = 9999
+		character.Gold = *money.NewMoney(999999) // Argent quasi infini
+		character.Icon = '👑'    // Icône spéciale pour God
+	}
+
+	return character
 }
 
 // GetExpForLevel retourne l'expérience requise pour un niveau donné
