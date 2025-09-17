@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -33,6 +34,13 @@ func (gs *GameState) CheckInteraction() {
 
 // HandleInteractionKey gère l'interaction avec la touche E
 func (gs *GameState) HandleInteractionKey() {
+	// Vérifier d'abord si le joueur est près du portail pour la téléportation
+	if gs.CheckPortalProximity() {
+		gs.TeleportToEldoria()
+		gs.Draw()
+		return
+	}
+
 	w := gs.WorldList[gs.CurrentWorld]
 	coords := [][2]int{
 		{w.PlayerX + 1, w.PlayerY},
@@ -64,8 +72,13 @@ func (gs *GameState) HandleInteractionKey() {
 	}
 }
 
-// SwitchWorld change de monde (TAB)
+// SwitchWorld change de monde (TAB) - seulement si le portail est débloqué
 func (gs *GameState) SwitchWorld() {
+	if !gs.PortalUnlocked {
+		gs.LoreMessage = "❌ Le portail est verrouillé ! Vous devez d'abord débloquer l'accès au portail."
+		return
+	}
+
 	// restaurer la tuile originale dans le monde courant
 	gs.WorldList[gs.CurrentWorld].Grid[gs.WorldList[gs.CurrentWorld].PlayerY][gs.WorldList[gs.CurrentWorld].PlayerX] = gs.WorldList[gs.CurrentWorld].OriginalTile
 
@@ -75,6 +88,8 @@ func (gs *GameState) SwitchWorld() {
 
 	// afficher le joueur à sa position sauvegardée
 	world.Grid[world.PlayerY][world.PlayerX] = '😀'
+
+	gs.LoreMessage = fmt.Sprintf("🌍 Téléportation vers %s réussie !", world.Name)
 }
 
 // ToggleInventory bascule l'affichage de l'inventaire
