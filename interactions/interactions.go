@@ -32,10 +32,18 @@ type InteractionManager struct {
 }
 
 func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *InteractionManager {
+
 	// Créer les objets de la boutique automatiquement
 	var shopItems []ShopItem
+	// Ajout Heal potion depuis PotionsList
+	if healPotion, exists := items.PotionsList["Heal potion"]; exists {
+		shopItems = append(shopItems, ShopItem{
+			Item:  healPotion,
+			Price: healPotion.GetPrice(),
+		})
+	}
+	// Ajout des autres items
 	itemOrder := []string{"Bâton", "Pierre", "Papier", "Parchemin", "Ecaille d'Azador"}
-
 	for _, itemName := range itemOrder {
 		if item, exists := items.CraftingItems[itemName]; exists {
 			shopItems = append(shopItems, ShopItem{
