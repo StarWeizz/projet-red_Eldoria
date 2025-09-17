@@ -8,23 +8,23 @@ import (
 	inventory "eldoria/Inventory"
 	"eldoria/interactions"
 	"eldoria/money"
-	"eldoria/worlds"
 	createcharacter "eldoria/player"
+	"eldoria/worlds"
 
 	"github.com/gdamore/tcell/v2"
 )
 
 // GameState représente l'état du jeu
 type GameState struct {
-	Screen              tcell.Screen
-	WorldList           []*worlds.World
-	CurrentWorld        int
-	PlayerCharacter     *createcharacter.Character
-	PlayerMoney         *money.Money
-	PlayerInventory     *inventory.Inventory
-	InteractionManager  *interactions.InteractionManager
-	LoreMessage         string
-	ShowingInventory    bool
+	Screen             tcell.Screen
+	WorldList          []*worlds.World
+	CurrentWorld       int
+	PlayerCharacter    *createcharacter.Character
+	PlayerMoney        *money.Money
+	PlayerInventory    *inventory.Inventory
+	InteractionManager *interactions.InteractionManager
+	LoreMessage        string
+	ShowingInventory   bool
 }
 
 // NewGameState crée un nouvel état de jeu
@@ -116,7 +116,7 @@ func (gs *GameState) Draw() {
 	}
 
 	// Dessiner le joueur à sa position
-	gs.Screen.SetContent(w.PlayerX*2, w.PlayerY+1, '😀', nil, tcell.StyleDefault)
+	gs.Screen.SetContent(w.PlayerX*2, w.PlayerY+1, gs.PlayerCharacter.Icon, nil, tcell.StyleDefault)
 	gs.Screen.SetContent(w.PlayerX*2+1, w.PlayerY+1, ' ', nil, tcell.StyleDefault)
 
 	// Bottombar - Afficher les interactions disponibles

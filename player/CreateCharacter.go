@@ -20,6 +20,7 @@ type Character struct {
 	CurrentHP int
 	Gold      money.Money
 	Inventory *inventory.Inventory
+	Icon      rune
 }
 
 // Fonction utilitaire pour mettre la première lettre en majuscule
@@ -97,15 +98,20 @@ func CreateCharacter() *Character {
 
 	chosenClass := classes[classChoice-1]
 
-	// HP de base selon la classe
+	// HP de base selon la classe et choix de l’icône
 	maxHP := 100
+	var icon rune
+
 	switch chosenClass {
 	case "Guerrier":
-		maxHP = 10
+		maxHP = 100
+		icon = '🛡' // Exemple pour Guerrier
 	case "Mage":
 		maxHP = 80
+		icon = '🔮' // Exemple pour Mage
 	case "Chasseur":
 		maxHP = 90
+		icon = '🪓' // Exemple pour Chasseur
 	}
 
 	return &Character{
@@ -116,5 +122,6 @@ func CreateCharacter() *Character {
 		CurrentHP: maxHP,
 		Gold:      *money.NewMoney(100),     // chaque perso démarre avec 100 or
 		Inventory: inventory.NewInventory(), // inventaire vide au départ
+		Icon:      icon,
 	}
 }
