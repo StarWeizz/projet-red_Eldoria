@@ -487,10 +487,6 @@ func (im *InteractionManager) BuyItem(itemIndex int) *InteractionResult {
 		}
 	}
 
-	return &InteractionResult{
-		Success: false,
-		Message: "❌ Erreur lors de l'achat.",
-	}
 }
 
 func (im *InteractionManager) handleBlacksmith(world *worlds.World, player *createcharacter.Character, x, y int) *InteractionResult {
