@@ -130,11 +130,10 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 
 		if win {
 			message := fmt.Sprintf("🏆 Vous avez vaincu Maximor !\n%s", damageLog)
-			player.CurrentHP = 0
 			return &InteractionResult{
 				Success: true,
 				Message: message,
-				EndGame: true, // Peut déclencher la fin du jeu
+				EndGame: true, // Déclenche la fin du jeu par victoire
 			}
 		} else if fled {
 			message := fmt.Sprintf("🏃‍♂️ Vous avez fui le combat contre Maximor.\n%s", damageLog)
@@ -148,7 +147,7 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 			return &InteractionResult{
 				Success: false,
 				Message: message,
-				EndGame: true,
+				EndGame: false, // Ne pas déclencher EndGame en cas de défaite, laisser main.go gérer la mort
 			}
 		}
 	case "monster":
@@ -387,11 +386,32 @@ func (im *InteractionManager) handleTreasure(world *worlds.World, x, y int) *Int
 }
 
 func (im *InteractionManager) handleMerchant(world *worlds.World, x, y int) *InteractionResult {
-	// Cette fonction n'a pas accès au player, donc on ne peut pas valider les quêtes ici
-	// Les quêtes de Sarahlia seront gérées via une interaction spéciale
-
-	// Afficher la liste des objets disponibles
+	// Cette fonction sera obsolète, remplacée par handleMerchantWithPlayer
+	// qui gère les quêtes correctement
 	shopMessage := "💎 Sarhalia : \"Bienvenue dans ma boutique !\"\n\nArticles disponibles :\n"
+	for i, shopItem := range im.shopItems {
+		shopMessage += fmt.Sprintf("%d. %s - %d 💰\n", i+1, shopItem.Item.GetName(), shopItem.Price)
+	}
+
+	return &InteractionResult{
+		Success: true,
+		Message: shopMessage,
+	}
+}
+
+// handleMerchantWithPlayer gère l'interaction avec Sarahlia en priorisant les quêtes
+func (im *InteractionManager) HandleMerchantWithPlayer(world *worlds.World, player *createcharacter.Character, x, y int) *InteractionResult {
+	// D'abord vérifier s'il y a une quête en cours
+	questMessage := im.CheckSarhaliaQuestPublic(player)
+	if questMessage != "" {
+		return &InteractionResult{
+			Success: true,
+			Message: questMessage,
+		}
+	}
+
+	// Si pas de quête active, afficher la boutique
+	shopMessage := "💎 Sarahlia : \"Bienvenue dans ma boutique !\"\n\nArticles disponibles :\n"
 	for i, shopItem := range im.shopItems {
 		shopMessage += fmt.Sprintf("%d. %s - %d 💰\n", i+1, shopItem.Item.GetName(), shopItem.Price)
 	}
@@ -811,13 +831,13 @@ func (im *InteractionManager) CheckSarhaliaQuestPublic(player *createcharacter.C
 					if healPotion, exists := items.PotionsList["Heal potion"]; exists {
 						im.inventory.Remove(healPotion, 1)
 					}
-					if im.emeryn.ValidateQuestStep(player, "main_quest") {
-						// Donner une potion bonus comme récompense
-						if healPotion, exists := items.PotionsList["Heal potion"]; exists {
-							im.inventory.Add(healPotion, 1)
-						}
-						return "💎 Sarahlia : \"Merci infiniment ! Tu as récupéré ma potion !\n\nVoici une potion supplémentaire en remerciement. Tu es un vrai héros !\""
+					// Valider l'étape de quête
+					im.emeryn.ValidateQuestStep(player, "main_quest")
+					// Donner explicitement 1 potion bonus comme récompense
+					if healPotion, exists := items.PotionsList["Heal potion"]; exists {
+						im.inventory.Add(healPotion, 1)
 					}
+					return "💎 Sarahlia : \"Merci infiniment ! Tu as récupéré ma potion !\n\nVoici une potion supplémentaire en remerciement. Tu es un vrai héros !\""
 				} else {
 					return "💎 Sarahlia : \"As-tu récupéré ma potion volée ? Je ne la vois pas dans ton inventaire...\""
 				}

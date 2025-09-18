@@ -111,6 +111,7 @@ func main() {
 					{w.PlayerX, w.PlayerY - 1},
 				}
 
+				questHandled := false
 				for _, coord := range coords {
 					x, y := coord[0], coord[1]
 					if x >= 0 && x < w.Width && y >= 0 && y < w.Height {
@@ -121,16 +122,20 @@ func main() {
 							if sarhaliaMessage != "" {
 								gameState.LoreMessage = sarhaliaMessage
 								gameState.Draw()
-								continue
+								questHandled = true
+								break
 							}
 						}
 					}
 				}
 
-				gameState.HandleInteractionKey()
-				if gameState.Ended {
-					// Quitte la boucle après la victoire
-					break
+				// Ne pas appeler HandleInteractionKey si une quête a été gérée
+				if !questHandled {
+					gameState.HandleInteractionKey()
+					if gameState.Ended {
+						// Quitte la boucle après la victoire
+						break
+					}
 				}
 				continue
 

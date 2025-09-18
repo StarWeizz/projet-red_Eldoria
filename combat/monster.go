@@ -44,7 +44,7 @@ func NewMaximor() *Boss {
 			Name:    "Maximor",
 			HP:      200,
 			Attack:  20,
-			Defense: 10,
+			Defense: 18,
 		},
 		SpecialCooldown: 0,
 	}
