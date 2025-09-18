@@ -130,6 +130,7 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 
 		if win {
 			message := fmt.Sprintf("🏆 Vous avez vaincu Maximor !\n%s", damageLog)
+			player.CurrentHP = 0
 			return &InteractionResult{
 				Success: true,
 				Message: message,
