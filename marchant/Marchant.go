@@ -41,16 +41,20 @@ func (m *Merchant) ShowStock() {
 func (m *Merchant) Buy(p *createcharacter.Character, itemName string) {
 	it, ok := m.Stock[itemName]
 	if !ok {
-		fmt.Println("Cet objet n’est pas en vente.")
+		fmt.Println("Cet objet n'est pas en vente.")
 		return
 	}
 
 	if p.Gold.Get() < it.GetPrice() {
-		fmt.Println("Pas assez d’or pour acheter", itemName)
+		fmt.Println("Pas assez d'or pour acheter", itemName)
+		return
+	}
+
+	if !p.Inventory.Add(it, 1) {
+		fmt.Println("Votre sac à dos est plein ! (30 objets maximum)")
 		return
 	}
 
 	p.Gold.Remove(it.GetPrice())
-	p.Inventory.Add(it, 1)
 	fmt.Printf("Achat réussi : %s ajouté à ton inventaire !\n", itemName)
 }

@@ -189,9 +189,9 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 			if strings.Contains(monster.Name, "Azador") {
 				// Vérifier si le joueur est à l'étape de récupération de potion
 				if im.shouldDropPotionForQuest() {
-					// Donner une potion de soin en plus
+					// Donner une potion de soin en plus (récompense de quête)
 					if healPotion, exists := items.PotionsList["Heal potion"]; exists {
-						im.inventory.Add(healPotion, 1)
+						im.inventory.AddQuestReward(healPotion, 1)
 						specialDrop = true
 					}
 				}
@@ -199,14 +199,26 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 			}
 
 			if dropItem, exists := items.CraftingItems["Ecaille d'Azador"]; exists {
-				im.inventory.Add(dropItem, 1)
+				// Planifier le respawn et faire disparaître le monstre dans tous les cas
 				respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
 				im.respawnQueue[respawnKey] = RespawnData{
 					RespawnTime: time.Now().Add(20 * time.Second),
 					ObjectType:  "monster",
 				}
 
-				message := fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s !\n%s", monster.Name, dropItem.GetName(), damageLog)
+				var message string
+				var itemGained items.Item
+
+				// Essayer d'ajouter l'écaille
+				if im.inventory.Add(dropItem, 1) {
+					// Succès - écaille ajoutée
+					message = fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s !\n%s", monster.Name, dropItem.GetName(), damageLog)
+					itemGained = dropItem
+				} else {
+					// Inventaire plein - pas d'écaille mais monstre vaincu
+					message = fmt.Sprintf("🏆 Vous avez vaincu %s !\n%s\n🎒 Inventaire plein ! Impossible de récupérer l'écaille d'Azador.", monster.Name, damageLog)
+				}
+
 				if specialDrop {
 					message += " et Heal potion (potion volée récupérée) !"
 				} else {
@@ -222,7 +234,7 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 				return &InteractionResult{
 					Success:      true,
 					Message:      message,
-					ItemGained:   dropItem,
+					ItemGained:   itemGained,
 					ShouldRemove: true,
 					RespawnTime:  20 * time.Second,
 				}
@@ -268,7 +280,12 @@ func (im *InteractionManager) handlePickup(world *worlds.World, player *createch
 	case "rock":
 		// Créer un item pierre depuis la map des CraftingItems
 		if stoneItem, exists := items.CraftingItems["Pierre"]; exists {
-			im.inventory.Add(stoneItem, 1)
+			if !im.inventory.Add(stoneItem, 1) {
+				return &InteractionResult{
+					Success: false,
+					Message: "🎒 Votre sac à dos est plein ! (30 objets maximum)",
+				}
+			}
 
 			// Donner de l'EXP pour la récolte
 			expMessage := player.AddExperience(1)
@@ -308,7 +325,12 @@ func (im *InteractionManager) handlePickup(world *worlds.World, player *createch
 	case "stick":
 		// Créer un item bâton depuis la map des CraftingItems
 		if stickItem, exists := items.CraftingItems["Bâton"]; exists {
-			im.inventory.Add(stickItem, 1)
+			if !im.inventory.Add(stickItem, 1) {
+				return &InteractionResult{
+					Success: false,
+					Message: "🎒 Votre sac à dos est plein ! (30 objets maximum)",
+				}
+			}
 
 			// Donner de l'EXP pour la récolte
 			expMessage := player.AddExperience(1)
@@ -441,13 +463,27 @@ func (im *InteractionManager) BuyItem(itemIndex int) *InteractionResult {
 		}
 	}
 
-	// Effectuer la transaction
+	// Vérifier l'espace dans l'inventaire avant l'achat
+	if !im.inventory.Add(shopItem.Item, 1) {
+		return &InteractionResult{
+			Success: false,
+			Message: "❌ Votre sac à dos est plein ! (30 objets maximum)",
+		}
+	}
+
+	// Effectuer la transaction (l'objet est déjà ajouté, maintenant déduire l'argent)
 	if im.playerMoney.Remove(shopItem.Price) {
-		im.inventory.Add(shopItem.Item, 1)
 		return &InteractionResult{
 			Success:    true,
 			Message:    fmt.Sprintf("✅ Vous avez acheté %s pour %d 💰 ! Il vous reste %d 💰.", shopItem.Item.GetName(), shopItem.Price, im.playerMoney.Get()),
 			ItemGained: shopItem.Item,
+		}
+	} else {
+		// Si on ne peut pas déduire l'argent, annuler l'ajout
+		im.inventory.Remove(shopItem.Item, 1)
+		return &InteractionResult{
+			Success: false,
+			Message: "❌ Erreur lors de l'achat.",
 		}
 	}
 
@@ -598,7 +634,7 @@ func (im *InteractionManager) CheckNearbyInteractions(world *worlds.World) []str
 			if interactionType != "none" && interactionType != "" && interactionType != "door" {
 				objectName := world.GetObjectNameAt(x, y)
 				availableInteractions = append(availableInteractions,
-					fmt.Sprintf("Appuyez sur [E] près de %s pour %s", objectName, interactionType))
+					fmt.Sprintf("Appuyez sur [E] près de %s pour intéragir.", objectName))
 			}
 		}
 	}
@@ -835,7 +871,7 @@ func (im *InteractionManager) CheckSarhaliaQuestPublic(player *createcharacter.C
 					im.emeryn.ValidateQuestStep(player, "main_quest")
 					// Donner explicitement 1 potion bonus comme récompense
 					if healPotion, exists := items.PotionsList["Heal potion"]; exists {
-						im.inventory.Add(healPotion, 1)
+						im.inventory.AddQuestReward(healPotion, 1) // Récompense de quête, contourne la limite
 					}
 					return "💎 Sarahlia : \"Merci infiniment ! Tu as récupéré ma potion !\n\nVoici une potion supplémentaire en remerciement. Tu es un vrai héros !\""
 				} else {
@@ -908,8 +944,24 @@ func (im *InteractionManager) PerformWeaponUpgrade(player *createcharacter.Chara
 		}
 	}
 
+	// Vérifier si c'est la première upgrade pour une quête
+	isQuestUpgrade := im.isQuestUpgrade(player, option.Next)
+
 	// Ajouter l'arme upgradée
-	im.inventory.Add(option.Next, 1)
+	if isQuestUpgrade {
+		// Si c'est un upgrade de quête, contourner la limite
+		im.inventory.AddQuestReward(option.Next, 1)
+	} else {
+		// Sinon, vérifier la limite normale
+		if !im.inventory.Add(option.Next, 1) {
+			// Si on ne peut pas ajouter l'arme upgradée, remettre les armes originales
+			im.inventory.Add(option.Current, 2)
+			return &InteractionResult{
+				Success: false,
+				Message: "🎒 Votre sac à dos est plein ! Impossible de créer l'arme upgradée.",
+			}
+		}
+	}
 
 	// Calculer combien d'armes de base il reste
 	remainingCount := im.inventory.Items[option.Current.GetName()]
@@ -928,6 +980,25 @@ func (im *InteractionManager) PerformWeaponUpgrade(player *createcharacter.Chara
 		Success: true,
 		Message: message,
 	}
+}
+
+// isQuestUpgrade vérifie si l'upgrade fait partie d'une quête active
+func (im *InteractionManager) isQuestUpgrade(player *createcharacter.Character, upgradeItem items.Item) bool {
+	if im.emeryn == nil {
+		return false
+	}
+
+	// Vérifier la quête d'introduction d'Emeryn
+	for _, quest := range im.emeryn.Quests {
+		if quest.ID == "intro_quest" && !quest.Completed {
+			// Si le joueur est à l'étape d'upgrade (étape 6) et que l'arme est une épée de chevalier
+			if quest.CurrentStep == 6 && upgradeItem.GetName() == "épée de chevalier" {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // GetEmeryn retourne la référence vers Emeryn pour les vérifications de quête externes

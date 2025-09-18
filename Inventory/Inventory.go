@@ -17,7 +17,28 @@ func NewInventory() *Inventory {
 	}
 }
 
-func (inv *Inventory) Add(item items.Item, qty int) {
+func (inv *Inventory) GetTotalItemCount() int {
+	totalCount := 0
+	for _, qty := range inv.Items {
+		totalCount += qty
+	}
+	return totalCount
+}
+
+func (inv *Inventory) Add(item items.Item, qty int) bool {
+	name := item.GetName()
+	currentTotal := inv.GetTotalItemCount()
+
+	if currentTotal+qty > 30 {
+		return false
+	}
+
+	inv.Items[name] += qty
+	inv.Refs[name] = item
+	return true
+}
+
+func (inv *Inventory) AddQuestReward(item items.Item, qty int) {
 	name := item.GetName()
 	inv.Items[name] += qty
 	inv.Refs[name] = item

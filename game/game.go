@@ -277,7 +277,7 @@ func (gs *GameState) Draw() {
 		expInfo = fmt.Sprintf("Lv%d(%d/%d)", gs.PlayerCharacter.Level, gs.PlayerCharacter.Experience, nextLevelExp)
 	}
 
-	topbar := fmt.Sprintf("%s (%s) - %d/%d ♥ - %s - 💰 %d - 🎒 %d items - %s - X:%02d Y:%02d%s%s",
+	topbar := fmt.Sprintf("%s (%s) - %d/%d ♥ - %s - 💰 %d - 🎒 %d/30 items - %s - X:%02d Y:%02d%s%s",
 		gs.PlayerCharacter.Name, gs.PlayerCharacter.Class,
 		gs.PlayerCharacter.CurrentHP, gs.PlayerCharacter.MaxHP,
 		expInfo, gs.PlayerMoney.Get(), inventoryCount, w.Name, w.PlayerX, w.PlayerY, hiddenStatus, questStatus)

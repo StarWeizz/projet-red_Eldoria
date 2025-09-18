@@ -187,12 +187,12 @@ func (npc *NPC) ValidateQuestStep(player *createcharacter.Character, questID str
 				}
 
 				if currentStep.Reward.Weapon != nil {
-					player.Inventory.Add(currentStep.Reward.Weapon, 1)
+					player.Inventory.AddQuestReward(currentStep.Reward.Weapon, 1)
 				}
 
 				for itemName, qty := range currentStep.Reward.Items {
 					if item, exists := items.CraftingItems[itemName]; exists {
-						player.Inventory.Add(item, qty)
+						player.Inventory.AddQuestReward(item, qty)
 					}
 				}
 
