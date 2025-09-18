@@ -8,6 +8,7 @@ import (
 	"time"
 
 	inventory "eldoria/Inventory"
+	"eldoria/combat"
 	"eldoria/interactions"
 	"eldoria/money"
 	createcharacter "eldoria/player"
@@ -16,6 +17,41 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
 )
+
+// Affiche le prompt et lit le choix du joueur (1=attaque, 2=fuite)
+func (gs *GameState) GetPlayerCombatChoice(h *createcharacter.Character, m *combat.Monster) string {
+	hasHeal := gs.PlayerInventory.HasItem("Heal potion", 1)
+	options := "1: Attaquer (%d♥)\n2: Heal%s\n3: Fuir"
+	healText := ""
+	if hasHeal {
+		healText = " (utiliser une potion)"
+	} else {
+		healText = " (pas de potion)"
+	}
+	gs.LoreMessage = fmt.Sprintf(
+		"Tour du héros !\n"+options+"\nMonstre: %s (%d♥)\nAppuyez sur 1, 2 ou 3...",
+		h.CurrentHP, healText, m.Name, m.HP)
+	gs.Draw() // Met à jour l'affichage
+
+	for {
+		ev := gs.Screen.PollEvent()
+		if keyEv, ok := ev.(*tcell.EventKey); ok {
+			switch keyEv.Rune() {
+			case '1':
+				return "attack"
+			case '2':
+				if hasHeal {
+					return "heal"
+				} else {
+					gs.LoreMessage = "Vous n'avez pas de potion de Heal ! Choisissez une autre action."
+					gs.Draw()
+				}
+			case '3':
+				return "flee"
+			}
+		}
+	}
+}
 
 // GameState représente l'état du jeu
 type GameState struct {
@@ -403,7 +439,6 @@ func (gs *GameState) CheckPortalProximity() bool {
 	distance := abs(world.PlayerX-portalX) + abs(world.PlayerY-portalY)
 	return distance <= 1
 }
-
 
 // TeleportToEldoria téléporte le joueur vers Eldoria via le portail
 func (gs *GameState) TeleportToEldoria() {

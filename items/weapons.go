@@ -23,11 +23,15 @@ func (w weapon) GetPrice() int {
 	return w.Price
 }
 
+func (w weapon) GetDamage() int {
+	return w.Damage
+}
+
 var WeaponList = map[string]weapon{
 	"Lame rouillé": {
 		Name:        "Lame rouillé",
 		Description: "",
-		Damage:      5,
+		Damage:      10,
 		Price:       35,
 		Level:       1,
 		Category:    "Sword",
@@ -36,7 +40,7 @@ var WeaponList = map[string]weapon{
 	"épée de chevalier": {
 		Name:        "épée de chevalier",
 		Description: "",
-		Damage:      10,
+		Damage:      15,
 		Level:       2,
 		Category:    "Sword",
 		//	DropRate:    20,
@@ -44,7 +48,7 @@ var WeaponList = map[string]weapon{
 	"Epée Démoniaque": {
 		Name:        "Epée Démoniaque",
 		Description: "",
-		Damage:      15,
+		Damage:      20,
 		Level:       3,
 		Category:    "Sword",
 		//	DropRate:    10,
@@ -53,7 +57,7 @@ var WeaponList = map[string]weapon{
 	"Grimoire": {
 		Name:        "Grimoire",
 		Description: "",
-		Damage:      5,
+		Damage:      10,
 		Price:       35,
 		Level:       1,
 		Category:    "Magie",
@@ -62,7 +66,7 @@ var WeaponList = map[string]weapon{
 	"Livre de Magie": {
 		Name:        "Livre de Magie",
 		Description: "",
-		Damage:      10,
+		Damage:      15,
 		Level:       2,
 		Category:    "Sword",
 		//	DropRate:    5,
@@ -70,7 +74,7 @@ var WeaponList = map[string]weapon{
 	"Livre des Ombre": {
 		Name:        "Livre des Ombre",
 		Description: "",
-		Damage:      15,
+		Damage:      20,
 		Level:       3,
 		Category:    "Sword",
 		//	DropRate:    5,
@@ -79,7 +83,7 @@ var WeaponList = map[string]weapon{
 	"Couteaux de Chasse": {
 		Name:        "Couteaux de Chasse",
 		Description: "",
-		Damage:      5,
+		Damage:      10,
 		Price:       35,
 		Level:       1,
 		Category:    "Dague",
@@ -88,7 +92,7 @@ var WeaponList = map[string]weapon{
 	"épée court runique": {
 		Name:        "épée court runique",
 		Description: "",
-		Damage:      10,
+		Damage:      15,
 		Level:       2,
 		Category:    "Dague",
 
@@ -97,7 +101,7 @@ var WeaponList = map[string]weapon{
 	"Dague de l’ombre": {
 		Name:        "Dague de l’ombre",
 		Description: "",
-		Damage:      15,
+		Damage:      20,
 		Level:       3,
 		Category:    "Dague",
 		//	DropRate:    5,

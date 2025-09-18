@@ -26,13 +26,13 @@ type RespawnData struct {
 }
 
 type InteractionManager struct {
-	respawnQueue    map[string]RespawnData // Clé: x_y_world, Valeur: temps de respawn
-	inventory       *inventory.Inventory
-	playerMoney     *money.Money
-	shopItems       []ShopItem
-	emeryn          *npcs.NPC
-	azadorsKilled   int  // Compteur pour la quête principale
-	sarhaliaRobbed  bool // État pour la quête de Sarahlia
+	respawnQueue   map[string]RespawnData // Clé: x_y_world, Valeur: temps de respawn
+	inventory      *inventory.Inventory
+	playerMoney    *money.Money
+	shopItems      []ShopItem
+	emeryn         *npcs.NPC
+	azadorsKilled  int  // Compteur pour la quête principale
+	sarhaliaRobbed bool // État pour la quête de Sarahlia
 }
 
 func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *InteractionManager {
@@ -78,7 +78,7 @@ type InteractionResult struct {
 	UnlockPortal bool
 }
 
-func (im *InteractionManager) HandleInteraction(world *worlds.World, player *createcharacter.Character, x, y int, interactionType string) *InteractionResult {
+func (im *InteractionManager) HandleInteraction(world *worlds.World, player *createcharacter.Character, x, y int, interactionType string, playerChoice func(h *createcharacter.Character, m *combat.Monster) string) *InteractionResult {
 	switch interactionType {
 	case "pickup":
 		return im.handlePickup(world, player, x, y)
@@ -97,23 +97,76 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 	case "portal":
 		return im.handlePortal(world, player, x, y)
 	case "boss":
-		boss := combat.NewMaximor()
-		win := combat.StartCombat(player, &boss.Monster)
+		// Combat contre Maximor, boss
+		maximor := &combat.Monster{
+			Name:    "Maximor",
+			HP:      175,
+			Attack:  10,
+			Defense: 8,
+		}
+		win, playerDamages, monsterDamages, fled := combat.StartCombat(player, maximor, playerChoice)
+		var damageLog string
+		for i := 0; i < len(playerDamages) || i < len(monsterDamages); i++ {
+			turn := i + 1
+			dmgPlayer := 0
+			dmgMonster := 0
+			special := false
+			if i < len(playerDamages) {
+				dmgPlayer = playerDamages[i]
+			}
+			if i < len(monsterDamages) {
+				dmgMonster = monsterDamages[i]
+				if dmgMonster < 0 {
+					dmgMonster = -dmgMonster
+					special = true
+				}
+			}
+			if special {
+				damageLog += fmt.Sprintf("Tour %d\n→ Vous infligez %d dégâts à %s.\n← %s utilise une ATTAQUE SPÉCIALE et vous inflige %d dégâts !\n\n", turn, dmgPlayer, maximor.Name, maximor.Name, dmgMonster)
+			} else {
+				damageLog += fmt.Sprintf("Tour %d\n→ Vous infligez %d dégâts à %s.\n← %s vous inflige %d dégâts.\n\n", turn, dmgPlayer, maximor.Name, maximor.Name, dmgMonster)
+			}
+		}
+
 		if win {
+			message := fmt.Sprintf("🏆 Vous avez vaincu Maximor !\n%s", damageLog)
 			return &InteractionResult{
 				Success: true,
-				Message: fmt.Sprintf("🏆 Vous avez vaincu %s ! Le royaume est sauvé !", boss.Monster.Name),
-				EndGame: true, // <- signal fin du jeu
+				Message: message,
+				EndGame: true, // Peut déclencher la fin du jeu
 			}
-		} else {
+		} else if fled {
+			message := fmt.Sprintf("🏃‍♂️ Vous avez fui le combat contre Maximor.\n%s", damageLog)
 			return &InteractionResult{
 				Success: false,
-				Message: fmt.Sprintf("💀 %s vous a vaincu... Le royaume est perdu...", boss.Monster.Name),
+				Message: message,
+				EndGame: false,
+			}
+		} else {
+			message := fmt.Sprintf("💀 Vous avez été vaincu par Maximor...\n%s", damageLog)
+			return &InteractionResult{
+				Success: false,
+				Message: message,
+				EndGame: true,
 			}
 		}
 	case "monster":
 		monster := combat.NewRandomMonster()
-		win := combat.StartCombat(player, monster)
+		win, playerDamages, monsterDamages, fled := combat.StartCombat(player, monster, playerChoice)
+		var damageLog string
+		for i := 0; i < len(playerDamages) || i < len(monsterDamages); i++ {
+			turn := i + 1
+			dmgPlayer := 0
+			dmgMonster := 0
+			if i < len(playerDamages) {
+				dmgPlayer = playerDamages[i]
+			}
+			if i < len(monsterDamages) {
+				dmgMonster = monsterDamages[i]
+			}
+			damageLog += fmt.Sprintf("Tour %d\n→ Vous infligez %d dégâts à %s.\n← %s vous inflige %d dégâts.\n\n", turn, dmgPlayer, monster.Name, monster.Name, dmgMonster)
+		}
+
 		if win {
 			// Donner de l'EXP selon le type de monstre
 			var expGained int
@@ -153,7 +206,7 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 					ObjectType:  "monster",
 				}
 
-				message := fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s", monster.Name, dropItem.GetName())
+				message := fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s !\n%s", monster.Name, dropItem.GetName(), damageLog)
 				if specialDrop {
 					message += " et Heal potion (potion volée récupérée) !"
 				} else {
@@ -175,7 +228,7 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 				}
 			}
 
-			message := fmt.Sprintf("🏆 Vous avez vaincu %s !", monster.Name)
+			message := fmt.Sprintf("🏆 Vous avez vaincu %s !\n%s", monster.Name, damageLog)
 			if expMessage != "" {
 				message += "\n" + expMessage
 			}
@@ -187,10 +240,17 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 				Success: true,
 				Message: message,
 			}
-		} else {
+		} else if fled {
+			message := fmt.Sprintf("🏃‍♂️ Vous avez fui le combat contre %s.\n%s", monster.Name, damageLog)
 			return &InteractionResult{
 				Success: false,
-				Message: fmt.Sprintf("💀 Vous avez été vaincu par %s...", monster.Name),
+				Message: message,
+			}
+		} else {
+			message := fmt.Sprintf("💀 Vous avez été vaincu par %s...\n%s", monster.Name, damageLog)
+			return &InteractionResult{
+				Success: false,
+				Message: message,
 			}
 		}
 	default:
@@ -779,8 +839,8 @@ func (im *InteractionManager) getWeaponUpgradeOptions() []UpgradeOption {
 
 	// Mapper les upgrades d'armes
 	weaponUpgrades := map[string]string{
-		"Lame rouillé":        "épée de chevalier",
-		"épée de chevalier":   "Epée Démoniaque",
+		"Lame rouillé":       "épée de chevalier",
+		"épée de chevalier":  "Epée Démoniaque",
 		"Grimoire":           "Livre de Magie",
 		"Livre de Magie":     "Livre des Ombre",
 		"Couteaux de Chasse": "épée court runique",

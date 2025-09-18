@@ -42,9 +42,9 @@ func NewMaximor() *Boss {
 	return &Boss{
 		Monster: Monster{
 			Name:    "Maximor",
-			HP:      150,
-			Attack:  10,
-			Defense: 3,
+			HP:      200,
+			Attack:  20,
+			Defense: 10,
 		},
 		SpecialCooldown: 0,
 	}

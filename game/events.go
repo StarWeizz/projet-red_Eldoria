@@ -1,7 +1,10 @@
 package game
 
 import (
+	"eldoria/combat"
+	createcharacter "eldoria/player"
 	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -15,7 +18,7 @@ func (gs *GameState) CheckInteraction() {
 	// Vérifier si le joueur est sur une porte (interaction automatique)
 	currentInteraction := w.GetInteractionType(w.PlayerX, w.PlayerY)
 	if currentInteraction == "door" {
-		result := gs.InteractionManager.HandleInteraction(w, gs.PlayerCharacter, w.PlayerX, w.PlayerY, "door")
+		result := gs.InteractionManager.HandleInteraction(w, gs.PlayerCharacter, w.PlayerX, w.PlayerY, "door", func(h *createcharacter.Character, m *combat.Monster) string { return gs.GetPlayerCombatChoice(h, m) })
 
 		if result.Success {
 			// Mettre à jour le message de lore au lieu de quitter l'écran
@@ -50,7 +53,7 @@ func (gs *GameState) HandleInteractionKey() {
 		if x >= 0 && x < w.Width && y >= 0 && y < w.Height {
 			interactionType := w.GetInteractionType(x, y)
 			if interactionType != "none" && interactionType != "" && interactionType != "door" {
-				result := gs.InteractionManager.HandleInteraction(w, gs.PlayerCharacter, x, y, interactionType)
+				result := gs.InteractionManager.HandleInteraction(w, gs.PlayerCharacter, x, y, interactionType, func(h *createcharacter.Character, m *combat.Monster) string { return gs.GetPlayerCombatChoice(h, m) })
 
 				// Afficher le message dans la zone de lore au lieu de quitter l'écran
 				gs.LoreMessage = result.Message
@@ -152,7 +155,7 @@ func (gs *GameState) HandleSpaceKey() {
 					gs.InteractionManager.AdvanceEmerynInteraction()
 
 					// Récupérer le nouveau message
-					result := gs.InteractionManager.HandleInteraction(w, gs.PlayerCharacter, x, y, "emeryn")
+					result := gs.InteractionManager.HandleInteraction(w, gs.PlayerCharacter, x, y, "emeryn", func(h *createcharacter.Character, m *combat.Monster) string { return gs.GetPlayerCombatChoice(h, m) })
 					gs.LoreMessage = result.Message
 
 					// Un seul redraw final avec sync
