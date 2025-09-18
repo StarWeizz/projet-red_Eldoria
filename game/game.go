@@ -74,16 +74,47 @@ func (gs *GameState) GetCurrentQuest() string {
 		if !quest.Completed && quest.CurrentStep < len(quest.Steps) {
 			currentStep := quest.Steps[quest.CurrentStep]
 
-			// Personnaliser les titres selon l'étape
-			switch quest.CurrentStep {
-			case 0:
-				return fmt.Sprintf("%s (%d/%d)", currentStep.Title, quest.CurrentStep+1, len(quest.Steps))
-			case 1:
-				return fmt.Sprintf("Tuer un Azador à la sortie du village (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
-			case 2:
-				return fmt.Sprintf("Voir Valenric le forgeron (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
-			default:
-				return fmt.Sprintf("%s (%d/%d)", currentStep.Title, quest.CurrentStep+1, len(quest.Steps))
+			// Gérer les titres selon la quête
+			if quest.ID == "intro_quest" {
+				// Personnaliser les titres selon l'étape d'introduction
+				switch quest.CurrentStep {
+				case 0:
+					return fmt.Sprintf("%s (%d/%d)", currentStep.Title, quest.CurrentStep+1, len(quest.Steps))
+				case 1:
+					return fmt.Sprintf("Tuer un Azador à la sortie du village (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 2:
+					return fmt.Sprintf("Récolter 2 pierres (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 3:
+					return fmt.Sprintf("Récolter 1 bâton (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 4:
+					return fmt.Sprintf("Crafter une lame rouillée (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 5:
+					return fmt.Sprintf("Voir Valenric le forgeron (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 6:
+					return fmt.Sprintf("Upgrader votre arme (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				default:
+					return fmt.Sprintf("%s (%d/%d)", currentStep.Title, quest.CurrentStep+1, len(quest.Steps))
+				}
+			} else if quest.ID == "main_quest" {
+				// Personnaliser les titres selon l'étape principale
+				switch quest.CurrentStep {
+				case 0:
+					return fmt.Sprintf("Retourner voir Emeryn (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 1:
+					return fmt.Sprintf("Éliminer 3 Azadors (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 2:
+					return fmt.Sprintf("Parler à Sarahlia (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 3:
+					return fmt.Sprintf("Récupérer la potion volée (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 4:
+					return fmt.Sprintf("Rapporter la potion (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 5:
+					return fmt.Sprintf("Retourner voir Emeryn (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				case 6:
+					return fmt.Sprintf("Débloquer le portail (%d/%d)", quest.CurrentStep+1, len(quest.Steps))
+				default:
+					return fmt.Sprintf("%s (%d/%d)", currentStep.Title, quest.CurrentStep+1, len(quest.Steps))
+				}
 			}
 		}
 	}
@@ -303,7 +334,7 @@ func (gs *GameState) Draw() {
 		}
 	} else {
 		// Afficher les commandes de base
-		defaultText := "Flèches: déplacer • [E]: interagir • [I]: inventaire • [C]: crafting • [P]: débloque portail • [A]: utilise potion • [TAB]: changer de monde • [Q]: quitter"
+		defaultText := "Flèches: déplacer • [E]: interagir • [I]: inventaire • [C]: crafting • [A]: utilise potion • [TAB]: changer de monde • [Q]: quitter"
 		for i, r := range defaultText {
 			if i < screenWidth {
 				gs.Screen.SetContent(i, bottomY, r, nil, tcell.StyleDefault.Foreground(tcell.ColorGray))
@@ -372,6 +403,7 @@ func (gs *GameState) CheckPortalProximity() bool {
 	distance := abs(world.PlayerX-portalX) + abs(world.PlayerY-portalY)
 	return distance <= 1
 }
+
 
 // TeleportToEldoria téléporte le joueur vers Eldoria via le portail
 func (gs *GameState) TeleportToEldoria() {

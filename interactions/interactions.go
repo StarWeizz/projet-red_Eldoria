@@ -26,11 +26,13 @@ type RespawnData struct {
 }
 
 type InteractionManager struct {
-	respawnQueue map[string]RespawnData // Clé: x_y_world, Valeur: temps de respawn
-	inventory    *inventory.Inventory
-	playerMoney  *money.Money
-	shopItems    []ShopItem
-	emeryn       *npcs.NPC
+	respawnQueue    map[string]RespawnData // Clé: x_y_world, Valeur: temps de respawn
+	inventory       *inventory.Inventory
+	playerMoney     *money.Money
+	shopItems       []ShopItem
+	emeryn          *npcs.NPC
+	azadorsKilled   int  // Compteur pour la quête principale
+	sarhaliaRobbed  bool // État pour la quête de Sarahlia
 }
 
 func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *InteractionManager {
@@ -56,11 +58,13 @@ func NewInteractionManager(inv *inventory.Inventory, playerMoney *money.Money) *
 	}
 
 	return &InteractionManager{
-		respawnQueue: make(map[string]RespawnData),
-		inventory:    inv,
-		playerMoney:  playerMoney,
-		shopItems:    shopItems,
-		emeryn:       npcs.CreateEmeryn(),
+		respawnQueue:   make(map[string]RespawnData),
+		inventory:      inv,
+		playerMoney:    playerMoney,
+		shopItems:      shopItems,
+		emeryn:         npcs.CreateEmeryn(),
+		azadorsKilled:  0,
+		sarhaliaRobbed: false,
 	}
 }
 
@@ -71,6 +75,7 @@ type InteractionResult struct {
 	ShouldRemove bool
 	RespawnTime  time.Duration
 	EndGame      bool
+	UnlockPortal bool
 }
 
 func (im *InteractionManager) HandleInteraction(world *worlds.World, player *createcharacter.Character, x, y int, interactionType string) *InteractionResult {
@@ -86,11 +91,11 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 	case "merchant":
 		return im.handleMerchant(world, x, y)
 	case "blacksmith":
-		return im.handleBlacksmith(world, x, y)
+		return im.handleBlacksmith(world, player, x, y)
 	case "emeryn":
 		return im.handleEmeryn(player)
 	case "portal":
-		return im.handlePortal(world, x, y)
+		return im.handlePortal(world, player, x, y)
 	case "boss":
 		boss := combat.NewMaximor()
 		win := combat.StartCombat(player, &boss.Monster)
@@ -127,7 +132,16 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 
 			// Vérifier si c'est un Azador et si le joueur est à l'étape de quête appropriée
 			questMessage := ""
+			specialDrop := false
 			if strings.Contains(monster.Name, "Azador") {
+				// Vérifier si le joueur est à l'étape de récupération de potion
+				if im.shouldDropPotionForQuest() {
+					// Donner une potion de soin en plus
+					if healPotion, exists := items.PotionsList["Heal potion"]; exists {
+						im.inventory.Add(healPotion, 1)
+						specialDrop = true
+					}
+				}
 				questMessage = im.checkAzadorKillQuest(player)
 			}
 
@@ -139,7 +153,12 @@ func (im *InteractionManager) HandleInteraction(world *worlds.World, player *cre
 					ObjectType:  "monster",
 				}
 
-				message := fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s !", monster.Name, dropItem.GetName())
+				message := fmt.Sprintf("🏆 Vous avez vaincu %s et obtenu %s", monster.Name, dropItem.GetName())
+				if specialDrop {
+					message += " et Heal potion (potion volée récupérée) !"
+				} else {
+					message += " !"
+				}
 				if expMessage != "" {
 					message += "\n" + expMessage
 				}
@@ -198,6 +217,12 @@ func (im *InteractionManager) handlePickup(world *worlds.World, player *createch
 				message += "\n" + expMessage
 			}
 
+			// Vérifier les progrès de quête
+			questMessage := im.checkQuestProgress(player)
+			if questMessage != "" {
+				message += "\n" + questMessage
+			}
+
 			// Planifier le respawn dans 10 secondes
 			// Utiliser un séparateur différent pour éviter les problèmes avec les espaces dans le nom du monde
 			respawnKey := fmt.Sprintf("%d|%d|%s", x, y, world.Name)
@@ -230,6 +255,12 @@ func (im *InteractionManager) handlePickup(world *worlds.World, player *createch
 			message := "🪵 Bâton ramassé !"
 			if expMessage != "" {
 				message += "\n" + expMessage
+			}
+
+			// Vérifier les progrès de quête
+			questMessage := im.checkQuestProgress(player)
+			if questMessage != "" {
+				message += "\n" + questMessage
 			}
 
 			// Planifier le respawn du bâton dans 15 secondes
@@ -295,6 +326,9 @@ func (im *InteractionManager) handleTreasure(world *worlds.World, x, y int) *Int
 }
 
 func (im *InteractionManager) handleMerchant(world *worlds.World, x, y int) *InteractionResult {
+	// Cette fonction n'a pas accès au player, donc on ne peut pas valider les quêtes ici
+	// Les quêtes de Sarahlia seront gérées via une interaction spéciale
+
 	// Afficher la liste des objets disponibles
 	shopMessage := "💎 Sarhalia : \"Bienvenue dans ma boutique !\"\n\nArticles disponibles :\n"
 	for i, shopItem := range im.shopItems {
@@ -342,11 +376,18 @@ func (im *InteractionManager) BuyItem(itemIndex int) *InteractionResult {
 	}
 }
 
-func (im *InteractionManager) handleBlacksmith(world *worlds.World, x, y int) *InteractionResult {
+func (im *InteractionManager) handleBlacksmith(world *worlds.World, player *createcharacter.Character, x, y int) *InteractionResult {
+	// Vérifier d'abord si c'est la première visite pour la quête
+	questMessage := im.checkBlacksmithQuestProgress(player)
+
 	// Générer la liste des armes upgrade possibles
 	upgradeOptions := im.getWeaponUpgradeOptions()
 
 	message := "⚒️ Valenric : \"Salut aventurier ! Je peux upgrader tes armes !\"\n\n"
+
+	if questMessage != "" {
+		message = questMessage + "\n\n" + message
+	}
 
 	if len(upgradeOptions) == 0 {
 		message += "Tu n'as pas d'armes upgradables pour le moment.\n"
@@ -354,7 +395,9 @@ func (im *InteractionManager) handleBlacksmith(world *worlds.World, x, y int) *I
 	} else {
 		message += "Armes upgradables :\n"
 		for i, option := range upgradeOptions {
-			message += fmt.Sprintf("%d. %s (x2) → %s\n", i+1, option.Current.GetName(), option.Next.GetName())
+			// Afficher la quantité disponible
+			availableQuantity := im.inventory.Items[option.Current.GetName()]
+			message += fmt.Sprintf("%d. %s (2 sur %d disponibles) → %s\n", i+1, option.Current.GetName(), availableQuantity, option.Next.GetName())
 		}
 		message += "\nAppuyez sur [1-%d] pour upgrader l'arme correspondante."
 		message = fmt.Sprintf(message, len(upgradeOptions))
@@ -376,10 +419,34 @@ func (im *InteractionManager) handleEmeryn(player *createcharacter.Character) *I
 	}
 }
 
-func (im *InteractionManager) handlePortal(world *worlds.World, x, y int) *InteractionResult {
+func (im *InteractionManager) handlePortal(world *worlds.World, player *createcharacter.Character, x, y int) *InteractionResult {
+	// Vérifier si c'est une interaction pour débloquer le portail
+	if im.emeryn != nil {
+		for _, quest := range im.emeryn.Quests {
+			if quest.ID == "main_quest" {
+				if !quest.Completed && quest.CurrentStep == 6 {
+					// Étape 6 (index 6) : Trouver le portail et le débloquer
+					if im.emeryn.ValidateQuestStep(player, "main_quest") {
+						return &InteractionResult{
+							Success:      true,
+							Message:      "🌟 Bravo ! Vous avez trouvé le portail et l'avez débloqué ! Quête principale terminée !\n\nVous pouvez maintenant utiliser [TAB] pour changer de monde !",
+							UnlockPortal: true,
+						}
+					}
+				} else if quest.Completed {
+					// Quête terminée, portail déjà débloqué
+					return &InteractionResult{
+						Success: true,
+						Message: "🌀 Portail vers Eldoria. Utilisez [TAB] pour changer de monde !",
+					}
+				}
+			}
+		}
+	}
+
 	return &InteractionResult{
 		Success: true,
-		Message: "🌀 Portail mystérieux vers Eldoria. Appuyez sur [P] pour le déverrouiller ou utilisez [TAB] si déjà débloqué.",
+		Message: "🌀 Portail mystérieux vers Eldoria. Vous devez d'abord terminer votre quête pour pouvoir l'activer.",
 	}
 }
 
@@ -423,13 +490,7 @@ func (im *InteractionManager) CheckRespawns(world *worlds.World) []string {
 
 			if worldName == world.Name {
 				_ = world.RespawnObject(x, y, data.ObjectType)
-				if data.ObjectType == "rock" {
-					messages = append(messages, fmt.Sprintf("🪨 Un rocher a réapparu en (%d, %d)", x, y))
-				} else if data.ObjectType == "monster" {
-					messages = append(messages, fmt.Sprintf("👹 Un monstre a réapparu en (%d, %d)", x, y))
-				} else if data.ObjectType == "stick" {
-					messages = append(messages, fmt.Sprintf("🪵 Un bâton a réapparu en (%d, %d)", x, y))
-				}
+				// Messages de respawn supprimés pour une expérience plus fluide
 			}
 			delete(im.respawnQueue, respawnKey)
 		}
@@ -464,8 +525,64 @@ func (im *InteractionManager) CheckNearbyInteractions(world *worlds.World) []str
 	return availableInteractions
 }
 
-// checkAzadorKillQuest vérifie si tuer un Azador fait progresser la quête d'intro
+// checkAzadorKillQuest vérifie si tuer un Azador fait progresser les quêtes
 func (im *InteractionManager) checkAzadorKillQuest(player *createcharacter.Character) string {
+	if im.emeryn == nil {
+		return ""
+	}
+
+	// Vérifier les quêtes d'Emeryn
+	for _, quest := range im.emeryn.Quests {
+		// Quête d'introduction
+		if quest.ID == "intro_quest" && !quest.Completed {
+			if quest.CurrentStep == 1 {
+				if im.emeryn.ValidateQuestStep(player, "intro_quest") {
+					return "✨ Quête mise à jour : Récolte maintenant 2 pierres !"
+				}
+			}
+		}
+		// Quête principale
+		if quest.ID == "main_quest" && !quest.Completed {
+			if quest.CurrentStep == 1 {
+				// Compter les Azadors tués pour la quête principale
+				im.azadorsKilled++
+				if im.azadorsKilled >= 3 {
+					if im.emeryn.ValidateQuestStep(player, "main_quest") {
+						return "✨ Quête mise à jour : Va voir Sarahlia la marchande !"
+					}
+				} else {
+					return fmt.Sprintf("✨ Azadors éliminés : %d/3", im.azadorsKilled)
+				}
+			} else if quest.CurrentStep == 3 {
+				// Récupérer la potion volée
+				if im.emeryn.ValidateQuestStep(player, "main_quest") {
+					return "✨ Quête mise à jour : Retourne voir Sarahlia avec la potion !"
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// shouldDropPotionForQuest vérifie si un Azador doit drop une potion pour la quête
+func (im *InteractionManager) shouldDropPotionForQuest() bool {
+	if im.emeryn == nil {
+		return false
+	}
+
+	// Vérifier si le joueur est à l'étape 3 de la quête principale (récupérer la potion)
+	for _, quest := range im.emeryn.Quests {
+		if quest.ID == "main_quest" && !quest.Completed && quest.CurrentStep == 3 {
+			return true
+		}
+	}
+
+	return false
+}
+
+// checkQuestProgress vérifie et fait progresser automatiquement les quêtes selon l'inventaire
+func (im *InteractionManager) checkQuestProgress(player *createcharacter.Character) string {
 	if im.emeryn == nil {
 		return ""
 	}
@@ -473,15 +590,177 @@ func (im *InteractionManager) checkAzadorKillQuest(player *createcharacter.Chara
 	// Vérifier la quête d'introduction d'Emeryn
 	for _, quest := range im.emeryn.Quests {
 		if quest.ID == "intro_quest" && !quest.Completed {
-			// Vérifier si on est à l'étape 1 (CurrentStep = 1, car 0-indexé)
-			// L'étape 1 correspond à "Tuer votre premier Azador"
-			if quest.CurrentStep == 1 {
-				// Valider l'étape de la quête directement via Emeryn
-				if im.emeryn.ValidateQuestStep(player, "intro_quest") {
-					return "✨ Quête mise à jour : Trouvez maintenant Valenric le forgeron !"
+			// Étape 2 (index 2) : Récolter 2 pierres
+			if quest.CurrentStep == 2 {
+				if player.Inventory.HasItem("Pierre", 2) {
+					if im.emeryn.ValidateQuestStep(player, "intro_quest") {
+						return "✨ Quête mise à jour : Récolte maintenant 1 bâton !"
+					}
+				}
+			}
+			// Étape 3 (index 3) : Récolter 1 bâton
+			if quest.CurrentStep == 3 {
+				if player.Inventory.HasItem("Bâton", 1) {
+					if im.emeryn.ValidateQuestStep(player, "intro_quest") {
+						return "✨ Quête mise à jour : Appuie sur [C] pour crafter une lame rouillée !"
+					}
+				}
+			}
+			// Étape 4 (index 4) : Crafter une lame rouillée
+			if quest.CurrentStep == 4 {
+				if player.Inventory.HasItem("Lame rouillé", 2) {
+					if im.emeryn.ValidateQuestStep(player, "intro_quest") {
+						return "✨ Quête mise à jour : Va voir Valenric le forgeron !"
+					}
 				}
 			}
 			break
+		}
+	}
+
+	// Vérifier la quête principale d'Emeryn
+	for _, quest := range im.emeryn.Quests {
+		if quest.ID == "main_quest" && !quest.Completed {
+			// Étape 5 (index 5) : Atteindre niveau 3 puis retourner voir Emeryn
+			if quest.CurrentStep == 5 {
+				if player.Level >= 3 || player.Name == "God" {
+					// Ne pas faire avancer automatiquement, le joueur doit retourner voir Emeryn
+					return "✨ Objectif accompli ! Retourne voir Emeryn pour la suite de ta mission !"
+				}
+			}
+			break
+		}
+	}
+
+	return ""
+}
+
+// checkBlacksmithQuestProgress vérifie si le joueur visite Valenric pour la première fois dans la quête
+func (im *InteractionManager) checkBlacksmithQuestProgress(player *createcharacter.Character) string {
+	if im.emeryn == nil {
+		return ""
+	}
+
+	// Vérifier la quête d'introduction d'Emeryn
+	for _, quest := range im.emeryn.Quests {
+		if quest.ID == "intro_quest" && !quest.Completed {
+			// Étape 5 (index 5) : Aller voir Valenric
+			if quest.CurrentStep == 5 {
+				if im.emeryn.ValidateQuestStep(player, "intro_quest") {
+					return "✨ Quête mise à jour : Upgrade maintenant ton arme !"
+				}
+			}
+			break
+		}
+	}
+
+	return ""
+}
+
+// checkUpgradeQuestProgress vérifie si l'upgrade d'arme termine la quête d'introduction
+func (im *InteractionManager) checkUpgradeQuestProgress(player *createcharacter.Character) string {
+	if im.emeryn == nil {
+		return ""
+	}
+
+	// Vérifier la quête d'introduction d'Emeryn
+	for _, quest := range im.emeryn.Quests {
+		if quest.ID == "intro_quest" && !quest.Completed {
+			// Étape 6 (index 6) : Upgrader l'arme
+			if quest.CurrentStep == 6 {
+				// Vérifier si le joueur a une épée de chevalier (arme upgradée)
+				if im.inventory.Items["épée de chevalier"] >= 1 {
+					if im.emeryn.ValidateQuestStep(player, "intro_quest") {
+						return "🎉✨ QUÊTE TERMINÉE ! Félicitations, vous avez complété votre introduction à l'aventure !"
+					}
+				}
+			}
+			break
+		}
+	}
+
+	return ""
+}
+
+// checkSarhaliaQuestProgress gère les interactions spéciales avec Sarahlia selon la quête
+func (im *InteractionManager) checkSarhaliaQuestProgress() string {
+	if im.emeryn == nil {
+		return ""
+	}
+
+	// Vérifier la quête principale d'Emeryn
+	for _, quest := range im.emeryn.Quests {
+		if quest.ID == "main_quest" && !quest.Completed {
+			// Étape 2 (index 2) : Première visite chez Sarahlia
+			if quest.CurrentStep == 2 {
+				im.sarhaliaRobbed = true
+				if im.emeryn.ValidateQuestStep(nil, "main_quest") {
+					return "💎 Sarahlia : \"Oh non ! Des Azadors ont volé mes précieuses potions de soin !\n\nPeux-tu m'aider à en récupérer au moins une ? Je te récompenserai généreusement !\""
+				}
+			}
+			// Étape 4 (index 4) : Rapporter la potion récupérée
+			if quest.CurrentStep == 4 {
+				if im.inventory.Items["Heal potion"] >= 1 {
+					// Retirer la potion de l'inventaire (Sarahlia la récupère)
+					if healPotion, exists := items.PotionsList["Heal potion"]; exists {
+						im.inventory.Remove(healPotion, 1)
+					}
+					if im.emeryn.ValidateQuestStep(nil, "main_quest") {
+						// Donner une potion bonus comme récompense
+						if healPotion, exists := items.PotionsList["Heal potion"]; exists {
+							im.inventory.Add(healPotion, 1)
+						}
+						return "💎 Sarahlia : \"Merci infiniment ! Tu as récupéré ma potion !\n\nVoici une potion supplémentaire en remerciement. Tu es un vrai héros !\""
+					}
+				} else {
+					return "💎 Sarahlia : \"As-tu récupéré ma potion volée ? Je ne la vois pas dans ton inventaire...\""
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// CheckQuestProgressPublic est une méthode publique pour vérifier les progrès de quête depuis l'extérieur
+func (im *InteractionManager) CheckQuestProgressPublic(player *createcharacter.Character) string {
+	return im.checkQuestProgress(player)
+}
+
+// CheckSarhaliaQuestPublic gère les interactions spéciales avec Sarahlia
+func (im *InteractionManager) CheckSarhaliaQuestPublic(player *createcharacter.Character) string {
+	if im.emeryn == nil {
+		return ""
+	}
+
+	// Vérifier la quête principale d'Emeryn
+	for _, quest := range im.emeryn.Quests {
+		if quest.ID == "main_quest" && !quest.Completed {
+			// Étape 2 (index 2) : Première visite chez Sarahlia
+			if quest.CurrentStep == 2 {
+				im.sarhaliaRobbed = true
+				if im.emeryn.ValidateQuestStep(player, "main_quest") {
+					return "💎 Sarahlia : \"Oh non ! Des Azadors ont volé mes précieuses potions de soin !\n\nPeux-tu m'aider à en récupérer au moins une ? Je te récompenserai généreusement !\""
+				}
+			}
+			// Étape 4 (index 4) : Rapporter la potion récupérée
+			if quest.CurrentStep == 4 {
+				if im.inventory.Items["Heal potion"] >= 1 {
+					// Retirer la potion de l'inventaire (Sarahlia la récupère)
+					if healPotion, exists := items.PotionsList["Heal potion"]; exists {
+						im.inventory.Remove(healPotion, 1)
+					}
+					if im.emeryn.ValidateQuestStep(player, "main_quest") {
+						// Donner une potion bonus comme récompense
+						if healPotion, exists := items.PotionsList["Heal potion"]; exists {
+							im.inventory.Add(healPotion, 1)
+						}
+						return "💎 Sarahlia : \"Merci infiniment ! Tu as récupéré ma potion !\n\nVoici une potion supplémentaire en remerciement. Tu es un vrai héros !\""
+					}
+				} else {
+					return "💎 Sarahlia : \"As-tu récupéré ma potion volée ? Je ne la vois pas dans ton inventaire...\""
+				}
+			}
 		}
 	}
 
@@ -528,7 +807,7 @@ func (im *InteractionManager) getWeaponUpgradeOptions() []UpgradeOption {
 }
 
 // PerformWeaponUpgrade effectue l'upgrade d'une arme
-func (im *InteractionManager) PerformWeaponUpgrade(optionIndex int) *InteractionResult {
+func (im *InteractionManager) PerformWeaponUpgrade(player *createcharacter.Character, optionIndex int) *InteractionResult {
 	options := im.getWeaponUpgradeOptions()
 
 	if optionIndex < 0 || optionIndex >= len(options) {
@@ -551,8 +830,26 @@ func (im *InteractionManager) PerformWeaponUpgrade(optionIndex int) *Interaction
 	// Ajouter l'arme upgradée
 	im.inventory.Add(option.Next, 1)
 
+	// Calculer combien d'armes de base il reste
+	remainingCount := im.inventory.Items[option.Current.GetName()]
+	message := fmt.Sprintf("⚒️ Upgrade réussie ! Vous avez obtenu %s !", option.Next.GetName())
+	if remainingCount > 0 {
+		message += fmt.Sprintf(" Il vous reste %d x %s.", remainingCount, option.Current.GetName())
+	}
+
+	// Vérifier si cela termine la quête d'introduction
+	questMessage := im.checkUpgradeQuestProgress(player)
+	if questMessage != "" {
+		message += "\n" + questMessage
+	}
+
 	return &InteractionResult{
 		Success: true,
-		Message: fmt.Sprintf("⚒️ Upgrade réussie ! Vous avez obtenu %s !", option.Next.GetName()),
+		Message: message,
 	}
+}
+
+// GetEmeryn retourne la référence vers Emeryn pour les vérifications de quête externes
+func (im *InteractionManager) GetEmeryn() *npcs.NPC {
+	return im.emeryn
 }

@@ -43,12 +43,6 @@ func main() {
 	// Dessiner l'état initial
 	gameState.Draw()
 
-	// Ajout d'une arme à l'inventaire du joueur au début
-	arme := items.WeaponList["Lame rouillé"]
-	gameState.PlayerInventory.Add(arme, 1)
-	// Affichage de l'inventaire pour vérifier
-	gameState.PlayerInventory.List()
-
 	// Boucle principale du jeu
 	for {
 		if gameState.Ended {
@@ -108,6 +102,31 @@ func main() {
 				handleQuit(screen)
 
 			case 'e', 'E':
+				// Vérifier d'abord les interactions spéciales avec Sarahlia
+				w := gameState.WorldList[gameState.CurrentWorld]
+				coords := [][2]int{
+					{w.PlayerX + 1, w.PlayerY},
+					{w.PlayerX - 1, w.PlayerY},
+					{w.PlayerX, w.PlayerY + 1},
+					{w.PlayerX, w.PlayerY - 1},
+				}
+
+				for _, coord := range coords {
+					x, y := coord[0], coord[1]
+					if x >= 0 && x < w.Width && y >= 0 && y < w.Height {
+						interactionType := w.GetInteractionType(x, y)
+						if interactionType == "merchant" {
+							// Vérifier si c'est une interaction spéciale avec Sarahlia pour les quêtes
+							sarhaliaMessage := gameState.InteractionManager.CheckSarhaliaQuestPublic(gameState.PlayerCharacter)
+							if sarhaliaMessage != "" {
+								gameState.LoreMessage = sarhaliaMessage
+								gameState.Draw()
+								continue
+							}
+						}
+					}
+				}
+
 				gameState.HandleInteractionKey()
 				if gameState.Ended {
 					// Quitte la boucle après la victoire
@@ -162,6 +181,13 @@ func main() {
 						} else {
 							gameState.LoreMessage = "Recette craftée : " + recipe.Result + " (objet non trouvé)"
 						}
+
+						// Vérifier les progrès de quête après le crafting
+						questMessage := gameState.InteractionManager.CheckQuestProgressPublic(gameState.PlayerCharacter)
+						if questMessage != "" {
+							gameState.LoreMessage += "\n" + questMessage
+						}
+
 						gameState.Draw()
 					}
 				} else if gameState.LoreMessage != "" && (strings.Contains(gameState.LoreMessage, "Marchand") || strings.Contains(gameState.LoreMessage, "Bienvenue")) {
@@ -171,18 +197,13 @@ func main() {
 				} else if gameState.LoreMessage != "" && strings.Contains(gameState.LoreMessage, "Valenric") {
 					// Gestion des upgrades d'armes chez Valenric
 					upgradeIndex := int(ev.Rune() - '1')
-					result := gameState.InteractionManager.PerformWeaponUpgrade(upgradeIndex)
+					result := gameState.InteractionManager.PerformWeaponUpgrade(gameState.PlayerCharacter, upgradeIndex)
 					gameState.LoreMessage = result.Message
 					gameState.Draw()
 				}
 
 			case ' ':
 				gameState.HandleSpaceKey()
-				continue
-
-			case 'p', 'P':
-				gameState.UnlockPortal()
-				gameState.Draw()
 				continue
 
 			case 'c', 'C':

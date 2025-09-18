@@ -9,12 +9,8 @@ import (
 func (gs *GameState) CheckInteraction() {
 	w := gs.WorldList[gs.CurrentWorld]
 
-	// Vérifier les respawns
-	respawnMessages := gs.InteractionManager.CheckRespawns(w)
-	for _, msg := range respawnMessages {
-		// Afficher le message de respawn dans la zone de lore
-		gs.LoreMessage = msg
-	}
+	// Vérifier les respawns (sans afficher de messages)
+	gs.InteractionManager.CheckRespawns(w)
 
 	// Vérifier si le joueur est sur une porte (interaction automatique)
 	currentInteraction := w.GetInteractionType(w.PlayerX, w.PlayerY)
@@ -68,6 +64,11 @@ func (gs *GameState) HandleInteractionKey() {
 				if result.EndGame {
 					gs.EndGame()
 					return
+				}
+
+				// Vérifier si le portail doit être débloqué
+				if result.UnlockPortal {
+					gs.PortalUnlocked = true
 				}
 
 				// Redessiner immédiatement pour afficher le message
