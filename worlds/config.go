@@ -151,6 +151,8 @@ func isWalkableOld(tile rune) bool {
 		return true
 	case '⬜':
 		return false
+	case '🧱':
+		return false
 	}
 	return true
 }
