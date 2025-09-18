@@ -150,7 +150,7 @@ Plus deux attaque spéciale
  
 - [@StarWeizz](https://github.com/StarWeizz) - Lead Project,  Développeur
  
-- [@mael](https://github.com/StarWeizz) - Développeur, Game Designer
+- [@mael](https://github.com/Mayel-0) - Développeur, Game Designer
  
-- [@mathis](https://github.com/StarWeizz) - Développeur, Game Designer
+- [@mathis](https://github.com/Mathisrealone) - Développeur, Game Designer
  
